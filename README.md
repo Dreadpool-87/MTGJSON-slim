@@ -63,7 +63,7 @@ From 20 source tables, the output retains 8 and omits 12. The complete `cardFore
 
 **Verification status:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md).
 
-No automatic weekly schedule, public Release or publication is enabled.
+A weekly GitHub Actions verification is configured for **Tuesday at 07:00 Europe/Brussels**; it becomes active when the workflow change is merged to the default branch. **No public database Release or publication is enabled.**
 
 ## Query audit
 
@@ -82,7 +82,15 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 ## Automation and troubleshooting
 
-The workflow runs fixture tests on PR updates. Real-data preparation is **manual only** (`workflow_dispatch`), with read-only repository permissions, per-ref concurrency and a timeout. Only JSON evidence is uploaded as an Actions artifact. There is no schedule, Release action, dataset upload or repository write permission. Manual full-data runs are available through the workflow on `main`. A future weekly `schedule` needs a separate reviewed change to the default branch and is not enabled here. An optional manual input `previous_upstream_sha256` (from a previously successful manifest) compares the current official checksum and skips the download/build when unchanged. This is an upstream-change check, not revalidation of a prior dataset. Omit it when testing a new profile or tool version. Without that input, hosted runs rebuild on their fresh disks; local package reuse performs full revalidation.
+**Weekly schedule:** Every **Tuesday at 07:00** in `Europe/Brussels` (CET/CEST). The [GitHub Actions verification workflow](.github/workflows/verify.yml) uses `cron: '0 7 * * 2'` with a named timezone, not a fixed UTC offset. GitHub can delay the exact start time, and scheduled workflows run only from the default branch. A public repository's scheduled workflows may be disabled by GitHub after 60 days without repository activity; review the workflow status if updates stop.
+
+**What runs:** Pull requests run the fixture tests only. On Tuesday, or when manually dispatched from Actions, the existing workflow runs the fixture tests, then verifies the official MTGJSON archive download and checksum, builds using the pinned profile, and validates the output. An upstream schema change, download/checksum error or failed validation **fails the job**. There is no automatic acceptance of a changed schema.
+
+**Workload:** A scheduled run has no previous-build input or persistent checked-in baseline. It therefore normally performs **one official download and one complete build per week**, not a daily build. Because MTGJSON's official source SHA-256 can change when build metadata changes, a different checksum does **not** by itself prove important card content changed. An optional **manual** input, `previous_upstream_sha256`, can skip the download/build if the current official SHA-256 matches that supplied digest. Do not claim the scheduled workflow detects semantic card differences or avoids unnecessary builds; those features are not implemented.
+
+**Outputs and retention:** Only JSON reports, source inventory, validation results and a provenance manifest are retained as a GitHub Actions artifact for **14 days**. The database and compressed database are **not** uploaded, released, committed or published. There is no persistent "latest database" in GitHub created by this workflow; a failed run cannot overwrite one. If long-term version history, semantic change reports, notifications, an automatic retry or distribution are needed, those require separate design and rights review.
+
+**Security:** The workflow has read-only repository permissions, does not push to `main`, and has no public Release action or dataset artifact. The entire build uses temporary runner storage, with per-ref concurrency and bounded timeouts.
 
 - Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
 - Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
