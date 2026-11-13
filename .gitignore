@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Generated MTGJSON datasets (publish as Release assets, not Git-tracked files)
+*.sqlite
+*.sqlite3
+*.sqlite.xz
+*.sqlite3.xz
+*.sql.xz
+*.json.xz
+*.json.gz
+*.sha256
