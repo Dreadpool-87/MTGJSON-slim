@@ -1,3 +1,5 @@
+> Historical planning document for profile v2 / 2.1, **not the current execution plan**. Profile 2.2 is documented in the [exact inventory](PROFILE_2_2_DATA_INVENTORY.md) and [acceptance report](acceptance-profile-2.2.md).
+
 # Profile v2 language reduction plan
 
 Authoritative change request: remove cardForeignData entirely from the selected output, investigate other non-English data, and delete only demonstrably redundant language information. Continue existing PR #1 and branch; main and Releases remain untouched. Existing Drive brief remains applicable except where this newer request changes the output policy.
