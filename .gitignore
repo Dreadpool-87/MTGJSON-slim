@@ -228,3 +228,7 @@ __marimo__/
 *.json.xz
 *.json.gz
 *.sha256
+
+# Local preparation and evidence
+/output*/
+/evidence/
