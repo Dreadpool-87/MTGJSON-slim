@@ -20,7 +20,7 @@ python slim.py inventory --database downloads/AllPrintings.sqlite --report evide
 python slim.py build \
   --archive downloads/AllPrintings.sqlite.xz \
   --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
-  --profile profiles/v2_1.json --output-dir output \
+  --profile profiles/v2_2.json --output-dir output \
   --tool-commit "$(git rev-parse HEAD)" --report evidence/build.json
 ```
 
@@ -31,34 +31,43 @@ For a checksum-only upstream check, use `download --previous-sha256 <prior-offic
 For independent validation, find the version-specific output filename in `output/manifest.json`:
 
 ```bash
-python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.1.sqlite \
-  --source downloads/AllPrintings.sqlite --profile profiles/v2_1.json \
+python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.2.sqlite \
+  --source downloads/AllPrintings.sqlite --profile profiles/v2_2.json \
   --report evidence/validation.json
 ```
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
 
-## Profile v2.1 policy
+## Profile v2.2 information and index policy
 
-The explicit [profile](profiles/v2_1.json) pins the complete official SQLite DDL observed for MTGJSON `5.3.0+20261113`. It rejects added, removed or changed tables, columns, indexes, views and triggers, including new fields in tables that would otherwise be omitted. A future schema change requires inventory, human review, a new versioned profile and tests. The converter supports the unconstrained source tables pinned here; it rejects new source constraints rather than silently losing them.
+The explicit [profile](profiles/v2_2.json) pins the complete official SQLite DDL observed for MTGJSON `5.3.0+20261113`. It rejects added, removed or changed tables, columns, indexes, views and triggers, including new fields in tables that would otherwise be omitted. A future schema change requires inventory, human review, a new versioned profile and tests. The converter supports the unconstrained source tables pinned here; it rejects new source constraints rather than silently losing them.
+
+Profile 2.2 preserves all **191 historical fields across eight tables**, restores the 14 fields missing from 2.1, retains its useful additions, and conservatively keeps further source card-level printing/artwork/reference metadata. See the [field and index decisions](docs/information-index-plan.md), [fixed historical contract](contracts/07nov-fields.json), and the separately delivered complete gapmatrix.
 
 | Area | Policy |
 | --- | --- |
-| Cards/tokens | Keep every row and language; retain UUIDs, layouts, face IDs, names, rules, printed text/types where present, game characteristics and flags listed explicitly in the profile |
-| Printed names | Preserve `printedName` and `facePrintedName` exactly, including NULLs; token source has neither column |
-| Identifiers/legalities/rulings | Retain every column and row |
-| Foreign card data | Exclude the entire `cardForeignData` table, its indexes and its output relationship |
-| Sets/meta | Retain every column and row |
-| Removed tables | cardForeignData, purchase URLs, sealed products, booster collation, set decks/translations and token product packaging |
-| Removed columns | Explicit cosmetic/commercial/analytics fields, such as artist, flavor text, finish, frame, promotional details, SKU/source products and rankings; see profile and schema comparison |
-| Indexes | Retain source indexes whose table and columns remain; add unique indexes for identity keys; reject null/empty keys |
-| Relationships | Check card identifiers/legalities/rulings against cards, token identifiers against tokens, cards against set codes, tokens against **tokenSetCode** |
+| Cards/tokens | Keep every printing, face, language and NULL. Preserve canonical/printed/original text, identity/layout characteristics, historical flags, finishes, dates and rankings; useful printing/artwork/frame/promo/watermark metadata remain available |
+| Identifiers/legalities/rulings/sets/meta | Preserve all historical fields and all existing 2.1 fields/rows |
+| Excluded data | cardForeignData and setTranslations; sales/product/booster tables; card/token SKU, source-product and booster-packaging fields |
+| Historical contract | Numeric profiles 2.2 and later must match the independent 07Nov contract file; removing/rewriting the embedded contract cannot disable it. Missing source fields or changed affinities fail before conversion |
+| SQLite type names | Historical CTAS aliases INT/NUM and source INTEGER/BOOLEAN/DATE have equivalent SQLite affinities; exact source values and NULLs are copied, not translated or cast |
+| Identity indexes | One actual UNIQUE index per UUID/code invariant; no duplicate ordinary+UNIQUE exact keys |
+| Printing/Oracle indexes | Explicit non-unique Scryfall and Oracle ID indexes, for cards and tokens; multi-face records share IDs and are never merged |
+| Name/CSV routes | Exact name, printedName, facePrintedName and setCode/collector-number lookups. Keep the historical cards.setCode index after measuring the composite-only regression |
+| Source audit | Pin all original source DDL, including omitted tables; upstream schema drift remains an error |
 
-English-only filtering is **not** performed. Read-only source analysis found 2,718 non-English card printings and 35 Japanese tokens, all with distinct printing IDs. Eight non-English cards lack an English Oracle-ID peer, and thirteen names do not occur among English card records. These are not expendable translation-table rows. Printed names and localized printed text remain intact; the separate `cardForeignData` table is removed. See [language policy and evidence](docs/language-policy-v2.md). Serialized upstream fields are preserved as stored; this tool does not reinterpret JSON/boolean strings, normalize names, merge faces or infer missing rules. Slimming is a projection, not a data correction.
+No English-only filter, fuzzy matching, invented translation or rules inference is performed. Printed/reference/flavor metadata stays separate from Oracle rules. Popularity metrics remain snapshot metadata, not a strength guarantee. The historical 07Nov bytes are a verified minimum field/index reference, not an output-byte target. Profile 2.1 remains unchanged and usable for historical reproduction.
 
-The historical `AllPrintings_slim_07Nov.sqlite.xz` is a separate reference (version `5.3.0+20261107`, recorded SHA-256 `9bc865c411a142801812e3df0d0ad1aed5cc792c055205592851b4b66c968af1`). It is not an upstream input or an equivalent output. Profile v2 omits foreign card data, as does that reference, but uses different selected columns, ordering and indexes. The previous profile v1 (available in Git history) included foreign card data and produced a 73,214,008-byte XZ archive from this source. No 45 MB size target or historical byte equality is promised.
+## Query audit
 
-The complete upstream source DDL still contains `cardForeignData` for schema auditing. Its presence in `source_schema` is not an output selection: no rows, table, indexes or validation relationship for it are generated. The source table must still match the reviewed schema.
+```bash
+python benchmarks/query_audit.py --database path/to/database.sqlite \
+  --cases cases.json --create-cases --report benchmark.json --repeats 5
+```
+
+Use the same saved case file for every compared database. The audit records exact SQL/parameters, result counts/digests, plans for every sample, five warm-cache timing batches and medians, and per-index dbstat footprints. Missing footprint capability is reported as null plus an error, never as zero bytes. These are sampled lookup workloads with full result retrieval, not whole-database latency promises or cold-cache tests. Oracle cohorts include singleton, moderate and high-fanout IDs; printing samples include singleton and shared multi-face IDs. Unknown-ID cases are explicitly synthetic. No personal collection is required.
+
+Compare different snapshots only as context. The final audit also compares 2.2 with a same-data variant carrying 2.1 indexes, so index effects can be separated from restored/wider data. More indexes do not imply every query gets faster; detailed regressions and tradeoffs belong in the report.
 
 ## Reproducibility and provenance
 
@@ -82,4 +91,4 @@ MTGJSON's [license](https://mtgjson.com/license/) and [brand conditions](https:/
 
 The MIT [LICENSE](LICENSE) covers original project code and documentation, not independent rights to all third-party card content. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Public dataset publication requires a separate redistribution-rights review and explicit authorization; this task does not establish legal clearance.
 
-Profile 2.1 explicitly reviews the 2026-11-13 upstream change: only the source `sets` column order changed; names/types/constraints remain equal. Retained output columns and order are unchanged. Earlier strict profiles reject this source as designed.
+The retained profile 2.1 explicitly reviews the 2026-11-13 upstream change: only the source `sets` column order changed; names/types/constraints remain equal. Retained output columns and order are unchanged. Earlier strict profiles reject this source as designed.

@@ -49,6 +49,62 @@ def schema(path):
             "WHERE name NOT GLOB 'sqlite_*' ORDER BY type,name")]
 
 
+def sqlite_affinity(declared_type):
+    """SQLite non-STRICT column affinity; no data conversion is performed here."""
+    if not isinstance(declared_type, str):
+        raise ValueError('historical type must be text')
+    t = declared_type.upper()
+    if 'INT' in t:
+        return 'INTEGER'
+    if any(x in t for x in ('CHAR', 'CLOB', 'TEXT')):
+        return 'TEXT'
+    if 'BLOB' in t or not t:
+        return 'BLOB'
+    if any(x in t for x in ('REAL', 'FLOA', 'DOUB')):
+        return 'REAL'
+    return 'NUMERIC'
+
+
+def index_details(c, table):
+    details = []
+    for row in c.execute(f'PRAGMA index_list({quote(table)})').fetchall():
+        name = row[1]
+        details.append({'name': name, 'unique': bool(row[2]), 'origin': row[3],
+                        'partial': bool(row[4]),
+                        'columns': [x[2] for x in c.execute(f'PRAGMA index_info({quote(name)})')],
+                        'sql': c.execute('SELECT sql FROM sqlite_schema WHERE name=?', (name,)).fetchone()[0]})
+    return sorted(details, key=lambda x: x['name'])
+
+
+def explicit_index_sql(p):
+    """Validate and render a complete explicit policy, never mixing inherited indexes."""
+    indexes = p['indexes']
+    if not isinstance(indexes, list):
+        raise ValueError('invalid explicit indexes')
+    ddl, names, keys = [], set(), set()
+    for x in indexes:
+        if not isinstance(x, dict) or set(x) != {'name', 'table', 'columns', 'unique'}:
+            raise ValueError('invalid explicit index fields')
+        name, table, cols = x['name'], x['table'], x['columns']
+        if (not isinstance(name, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name)
+                or name.lower().startswith('sqlite_') or name.lower() in names
+                or type(x['unique']) is not bool or table not in p['tables']
+                or not isinstance(cols, list) or not cols or len(set(cols)) != len(cols)
+                or not set(cols) <= set(p['tables'][table])):
+            raise ValueError('invalid explicit index definition')
+        key = (table, tuple(cols))
+        if key in keys:
+            raise ValueError('duplicate explicit index keys')
+        keys.add(key)
+        names.add(name.lower())
+        ddl.append((name, f'CREATE {"UNIQUE " if x["unique"] else ""}INDEX {quote(name)} '
+                         f'ON {quote(table)} ({", ".join(map(quote, cols))})'))
+    for table, key in p['unique_keys'].items():
+        if not any(x['table'] == table and x['columns'] == [key] and x['unique'] for x in indexes):
+            raise ValueError(f'explicit index policy lacks unique identity key: {table}.{key}')
+    return [sql for _, sql in sorted(ddl)]
+
+
 def inventory(path):
     with closing(connect(path)) as c:
         result = {'size_bytes': Path(path).stat().st_size, 'schema': schema(path), 'tables': {}}
@@ -60,6 +116,7 @@ def inventory(path):
                 'columns': [list(x) for x in c.execute(f'PRAGMA table_info({q})')],
                 'foreign_keys': [list(x) for x in c.execute(f'PRAGMA foreign_key_list({q})')],
                 'indexes': [list(x) for x in c.execute(f'PRAGMA index_list({q})')],
+                'index_details': index_details(c, name),
                 'count': c.execute(f'SELECT count(*) FROM {q}').fetchone()[0]}
         result['integrity_check'] = [x[0] for x in c.execute('PRAGMA integrity_check')]
         return result
@@ -67,7 +124,7 @@ def inventory(path):
 
 def check_profile(p):
     required = {'version', 'description', 'source_schema', 'tables', 'unique_keys', 'relationships'}
-    if not isinstance(p, dict) or set(p) != required:
+    if not isinstance(p, dict) or not required <= set(p) or not set(p) <= required | {'indexes', 'historical_contract'}:
         raise ValueError('invalid profile keys')
     if not isinstance(p['version'], str) or not re.fullmatch(r'[A-Za-z0-9.-]+', p['version']):
         raise ValueError('invalid profile version')
@@ -87,6 +144,27 @@ def check_profile(p):
                 "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type,name")]
             if actual != rows:
                 raise ValueError('profile source schema is not canonical')
+            contract = p.get('historical_contract', {})
+            numeric_version = re.match(r'^(\d+)(?:\.(\d+))?', p['version'])
+            if numeric_version and tuple(int(x or 0) for x in numeric_version.groups()) >= (2, 2):
+                try:
+                    reference_path = Path(__file__).resolve().parent / 'contracts' / '07nov-fields.json'
+                    reference = json.loads(reference_path.read_text())['tables']
+                except (OSError, ValueError, KeyError) as e:
+                    raise ValueError('historical reference contract unavailable') from e
+                if contract != reference:
+                    raise ValueError('historical contract missing or differs from fixed 07Nov reference')
+            if not isinstance(contract, dict):
+                raise ValueError('invalid historical field contract')
+            for table, fields in contract.items():
+                if table not in p['tables'] or not isinstance(fields, dict) or not fields:
+                    raise ValueError(f'historical table missing or invalid: {table}')
+                info = {x[1]: x for x in c.execute(f'PRAGMA table_info({quote(table)})')}
+                for field, declared_type in fields.items():
+                    if field not in p['tables'][table] or field not in info:
+                        raise ValueError(f'historical field missing: {table}.{field}')
+                    if sqlite_affinity(declared_type) != sqlite_affinity(info[field][2]):
+                        raise ValueError(f'historical affinity changed: {table}.{field}')
             ddl = []
             for table, columns in sorted(p['tables'].items()):
                 info = {x[1]: x for x in c.execute(f'PRAGMA table_info({quote(table)})')}
@@ -103,15 +181,20 @@ def check_profile(p):
                     raise ValueError('profile contains unsupported source constraints')
                 defs = ', '.join(f'{quote(col)} {info[col][2]}' for col in columns)
                 ddl.append(f'CREATE TABLE {quote(table)} ({defs})')
-            for typ, name, table, sql in rows:
-                if typ == 'index' and table in p['tables']:
-                    cols = [x[2] for x in c.execute(f'PRAGMA index_info({quote(name)})')]
-                    if all(x in p['tables'][table] for x in cols):
-                        ddl.append(sql)
-            for table, key in sorted(p['unique_keys'].items()):
+            for table, key in p['unique_keys'].items():
                 if table not in p['tables'] or key not in p['tables'][table]:
                     raise ValueError('invalid profile unique key')
-                ddl.append(f'CREATE UNIQUE INDEX {quote("slim_unique_" + table)} ON {quote(table)} ({quote(key)})')
+            if 'indexes' in p:
+                ddl.extend(explicit_index_sql(p))
+            else:
+                # Preserve the legacy profile path byte-for-byte for historical reproducibility.
+                for typ, name, table, sql in rows:
+                    if typ == 'index' and table in p['tables']:
+                        cols = [x[2] for x in c.execute(f'PRAGMA index_info({quote(name)})')]
+                        if all(x in p['tables'][table] for x in cols):
+                            ddl.append(sql)
+                for table, key in sorted(p['unique_keys'].items()):
+                    ddl.append(f'CREATE UNIQUE INDEX {quote("slim_unique_" + table)} ON {quote(table)} ({quote(key)})')
             if not isinstance(p['relationships'], list):
                 raise ValueError('invalid profile relationships')
             for relation in p['relationships']:

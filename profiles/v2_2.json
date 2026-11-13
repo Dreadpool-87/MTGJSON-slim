@@ -1,0 +1,958 @@
+{
+  "version": "2.2",
+  "description": "Information-rich superset of verified 07Nov fields and useful 2.1/source printing metadata. Explicit measured indexes. Every printing/value/NULL preserved; no foreign translation tables or product/booster packaging.",
+  "source_schema": [
+    [
+      "index",
+      "idx_cardForeignData_language",
+      "cardForeignData",
+      "CREATE INDEX \"idx_cardForeignData_language\" ON \"cardForeignData\" (\"language\")"
+    ],
+    [
+      "index",
+      "idx_cardForeignData_uuid",
+      "cardForeignData",
+      "CREATE INDEX \"idx_cardForeignData_uuid\" ON \"cardForeignData\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_cardIdentifiers_uuid",
+      "cardIdentifiers",
+      "CREATE INDEX \"idx_cardIdentifiers_uuid\" ON \"cardIdentifiers\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_cardLegalities_uuid",
+      "cardLegalities",
+      "CREATE INDEX \"idx_cardLegalities_uuid\" ON \"cardLegalities\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_cardPurchaseUrls_uuid",
+      "cardPurchaseUrls",
+      "CREATE INDEX \"idx_cardPurchaseUrls_uuid\" ON \"cardPurchaseUrls\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_cardRulings_uuid",
+      "cardRulings",
+      "CREATE INDEX \"idx_cardRulings_uuid\" ON \"cardRulings\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_cards_name",
+      "cards",
+      "CREATE INDEX \"idx_cards_name\" ON \"cards\" (\"name\")"
+    ],
+    [
+      "index",
+      "idx_cards_setCode",
+      "cards",
+      "CREATE INDEX \"idx_cards_setCode\" ON \"cards\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_cards_uuid",
+      "cards",
+      "CREATE INDEX \"idx_cards_uuid\" ON \"cards\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_sealedProducts_setCode",
+      "sealedProducts",
+      "CREATE INDEX \"idx_sealedProducts_setCode\" ON \"sealedProducts\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_sealedProducts_uuid",
+      "sealedProducts",
+      "CREATE INDEX \"idx_sealedProducts_uuid\" ON \"sealedProducts\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_setBoosterContentWeights_setCode",
+      "setBoosterContentWeights",
+      "CREATE INDEX \"idx_setBoosterContentWeights_setCode\" ON \"setBoosterContentWeights\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_setBoosterContents_setCode",
+      "setBoosterContents",
+      "CREATE INDEX \"idx_setBoosterContents_setCode\" ON \"setBoosterContents\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_setBoosterSheetCards_cardUuid",
+      "setBoosterSheetCards",
+      "CREATE INDEX \"idx_setBoosterSheetCards_cardUuid\" ON \"setBoosterSheetCards\" (\"cardUuid\")"
+    ],
+    [
+      "index",
+      "idx_setBoosterSheetCards_setCode",
+      "setBoosterSheetCards",
+      "CREATE INDEX \"idx_setBoosterSheetCards_setCode\" ON \"setBoosterSheetCards\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_setBoosterSheets_setCode",
+      "setBoosterSheets",
+      "CREATE INDEX \"idx_setBoosterSheets_setCode\" ON \"setBoosterSheets\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_setDecks_setCode",
+      "setDecks",
+      "CREATE INDEX \"idx_setDecks_setCode\" ON \"setDecks\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_setTranslations_code",
+      "setTranslations",
+      "CREATE INDEX \"idx_setTranslations_code\" ON \"setTranslations\" (\"code\")"
+    ],
+    [
+      "index",
+      "idx_sets_code",
+      "sets",
+      "CREATE INDEX \"idx_sets_code\" ON \"sets\" (\"code\")"
+    ],
+    [
+      "index",
+      "idx_sets_name",
+      "sets",
+      "CREATE INDEX \"idx_sets_name\" ON \"sets\" (\"name\")"
+    ],
+    [
+      "index",
+      "idx_tokenIdentifiers_uuid",
+      "tokenIdentifiers",
+      "CREATE INDEX \"idx_tokenIdentifiers_uuid\" ON \"tokenIdentifiers\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_tokenProductIdentifiers_tokenProductUuid",
+      "tokenProductIdentifiers",
+      "CREATE INDEX \"idx_tokenProductIdentifiers_tokenProductUuid\" ON \"tokenProductIdentifiers\" (\"tokenProductUuid\")"
+    ],
+    [
+      "index",
+      "idx_tokenProductParts_tokenProductUuid",
+      "tokenProductParts",
+      "CREATE INDEX \"idx_tokenProductParts_tokenProductUuid\" ON \"tokenProductParts\" (\"tokenProductUuid\")"
+    ],
+    [
+      "index",
+      "idx_tokenProductParts_uuid",
+      "tokenProductParts",
+      "CREATE INDEX \"idx_tokenProductParts_uuid\" ON \"tokenProductParts\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_tokenProducts_uuid",
+      "tokenProducts",
+      "CREATE INDEX \"idx_tokenProducts_uuid\" ON \"tokenProducts\" (\"uuid\")"
+    ],
+    [
+      "index",
+      "idx_tokens_name",
+      "tokens",
+      "CREATE INDEX \"idx_tokens_name\" ON \"tokens\" (\"name\")"
+    ],
+    [
+      "index",
+      "idx_tokens_setCode",
+      "tokens",
+      "CREATE INDEX \"idx_tokens_setCode\" ON \"tokens\" (\"setCode\")"
+    ],
+    [
+      "index",
+      "idx_tokens_uuid",
+      "tokens",
+      "CREATE INDEX \"idx_tokens_uuid\" ON \"tokens\" (\"uuid\")"
+    ],
+    [
+      "table",
+      "cardForeignData",
+      "cardForeignData",
+      "CREATE TABLE \"cardForeignData\" (\"uuid\" TEXT, \"faceName\" TEXT, \"flavorText\" TEXT, \"identifiers\" TEXT, \"language\" TEXT, \"multiverseId\" INTEGER, \"name\" TEXT, \"text\" TEXT, \"type\" TEXT, \"sourceProducts\" TEXT, \"skuIds\" TEXT)"
+    ],
+    [
+      "table",
+      "cardIdentifiers",
+      "cardIdentifiers",
+      "CREATE TABLE \"cardIdentifiers\" (\"uuid\" TEXT, \"scryfallId\" TEXT, \"scryfallOracleId\" TEXT, \"scryfallIllustrationId\" TEXT, \"scryfallCardBackId\" TEXT, \"mcmId\" TEXT, \"mcmMetaId\" TEXT, \"mtgArenaId\" TEXT, \"mtgoId\" TEXT, \"mtgoFoilId\" TEXT, \"multiverseId\" TEXT, \"tcgplayerProductId\" TEXT, \"tcgplayerEtchedProductId\" TEXT, \"tcgplayerAlternativeFoilProductId\" TEXT, \"cardKingdomId\" TEXT, \"cardKingdomFoilId\" TEXT, \"cardKingdomEtchedId\" TEXT, \"cardsphereId\" TEXT, \"cardsphereAlternativeFoilId\" TEXT, \"cardsphereEtchedId\" TEXT, \"cardsphereFoilId\" TEXT, \"deckboxId\" TEXT, \"mtgjsonFoilVersionId\" TEXT, \"mtgjsonNonFoilVersionId\" TEXT, \"mtgjsonV4Id\" TEXT)"
+    ],
+    [
+      "table",
+      "cardLegalities",
+      "cardLegalities",
+      "CREATE TABLE \"cardLegalities\" (\"uuid\" TEXT, \"alchemy\" TEXT, \"brawl\" TEXT, \"commander\" TEXT, \"competitivebrawl\" TEXT, \"duel\" TEXT, \"future\" TEXT, \"gladiator\" TEXT, \"historic\" TEXT, \"legacy\" TEXT, \"modern\" TEXT, \"oathbreaker\" TEXT, \"oldschool\" TEXT, \"pauper\" TEXT, \"paupercommander\" TEXT, \"penny\" TEXT, \"pioneer\" TEXT, \"predh\" TEXT, \"premodern\" TEXT, \"standard\" TEXT, \"standardbrawl\" TEXT, \"timeless\" TEXT, \"tlr\" TEXT, \"vintage\" TEXT)"
+    ],
+    [
+      "table",
+      "cardPurchaseUrls",
+      "cardPurchaseUrls",
+      "CREATE TABLE \"cardPurchaseUrls\" (\"uuid\" TEXT, \"cardKingdom\" TEXT, \"cardKingdomFoil\" TEXT, \"cardKingdomEtched\" TEXT, \"cardmarket\" TEXT, \"cardmarketFoil\" TEXT, \"tcgplayer\" TEXT, \"tcgplayerEtched\" TEXT, \"tcgplayerAlternativeFoil\" TEXT)"
+    ],
+    [
+      "table",
+      "cardRulings",
+      "cardRulings",
+      "CREATE TABLE \"cardRulings\" (\"uuid\" TEXT, \"date\" DATE, \"text\" TEXT)"
+    ],
+    [
+      "table",
+      "cards",
+      "cards",
+      "CREATE TABLE \"cards\" (\"artist\" TEXT, \"artistIds\" TEXT, \"asciiName\" TEXT, \"attractionLights\" TEXT, \"availability\" TEXT, \"boosterTypes\" TEXT, \"borderColor\" TEXT, \"cardParts\" TEXT, \"colorIdentity\" TEXT, \"colorIndicator\" TEXT, \"colors\" TEXT, \"defense\" TEXT, \"duelDeck\" TEXT, \"edhrecRank\" INTEGER, \"edhrecSaltiness\" REAL, \"faceConvertedManaCost\" REAL, \"faceFlavorName\" TEXT, \"faceManaValue\" REAL, \"faceName\" TEXT, \"facePrintedName\" TEXT, \"finishes\" TEXT, \"flavorName\" TEXT, \"flavorText\" TEXT, \"frameEffects\" TEXT, \"frameVersion\" TEXT, \"hand\" TEXT, \"hasAlternativeDeckLimit\" BOOLEAN, \"hasContentWarning\" BOOLEAN, \"isAlternative\" BOOLEAN, \"isFullArt\" BOOLEAN, \"isFunny\" BOOLEAN, \"isGameChanger\" BOOLEAN, \"isOnlineOnly\" BOOLEAN, \"isOversized\" BOOLEAN, \"isPromo\" BOOLEAN, \"isRebalanced\" BOOLEAN, \"isReprint\" BOOLEAN, \"isReserved\" BOOLEAN, \"isStorySpotlight\" BOOLEAN, \"isTextless\" BOOLEAN, \"isTimeshifted\" BOOLEAN, \"keywords\" TEXT, \"language\" TEXT, \"layout\" TEXT, \"leadershipSkills\" TEXT, \"life\" TEXT, \"loyalty\" TEXT, \"manaCost\" TEXT, \"manaValue\" REAL, \"name\" TEXT, \"number\" TEXT, \"originalPrintings\" TEXT, \"originalReleaseDate\" TEXT, \"originalText\" TEXT, \"otherFaceIds\" TEXT, \"power\" TEXT, \"printedName\" TEXT, \"printedText\" TEXT, \"printedType\" TEXT, \"printings\" TEXT, \"producedMana\" TEXT, \"promoTypes\" TEXT, \"rarity\" TEXT, \"rebalancedPrintings\" TEXT, \"relatedCards\" TEXT, \"securityStamp\" TEXT, \"setCode\" TEXT, \"side\" TEXT, \"signature\" TEXT, \"skuIds\" TEXT, \"sourceProducts\" TEXT, \"subsets\" TEXT, \"subtypes\" TEXT, \"supertypes\" TEXT, \"text\" TEXT, \"toughness\" TEXT, \"type\" TEXT, \"types\" TEXT, \"uuid\" TEXT, \"variations\" TEXT, \"watermark\" TEXT)"
+    ],
+    [
+      "table",
+      "meta",
+      "meta",
+      "CREATE TABLE \"meta\" (\"date\" TEXT, \"version\" TEXT)"
+    ],
+    [
+      "table",
+      "sealedProducts",
+      "sealedProducts",
+      "CREATE TABLE \"sealedProducts\" (\"setCode\" TEXT, \"cardCount\" INTEGER, \"category\" TEXT, \"contents\" TEXT, \"identifiers\" TEXT, \"isFoilOnly\" TEXT, \"name\" TEXT, \"productSize\" TEXT, \"purchaseUrls\" TEXT, \"releaseDate\" TEXT, \"subtype\" TEXT, \"uuid\" TEXT)"
+    ],
+    [
+      "table",
+      "setBoosterContentWeights",
+      "setBoosterContentWeights",
+      "CREATE TABLE \"setBoosterContentWeights\" (\"setCode\" TEXT, \"boosterName\" TEXT, \"boosterIndex\" INTEGER, \"boosterWeight\" INTEGER)"
+    ],
+    [
+      "table",
+      "setBoosterContents",
+      "setBoosterContents",
+      "CREATE TABLE \"setBoosterContents\" (\"setCode\" TEXT, \"boosterName\" TEXT, \"boosterIndex\" INTEGER, \"sheetName\" TEXT, \"sheetPicks\" INTEGER)"
+    ],
+    [
+      "table",
+      "setBoosterSheetCards",
+      "setBoosterSheetCards",
+      "CREATE TABLE \"setBoosterSheetCards\" (\"setCode\" TEXT, \"boosterName\" TEXT, \"sheetName\" TEXT, \"cardUuid\" TEXT, \"cardWeight\" INTEGER)"
+    ],
+    [
+      "table",
+      "setBoosterSheets",
+      "setBoosterSheets",
+      "CREATE TABLE \"setBoosterSheets\" (\"setCode\" TEXT, \"boosterName\" TEXT, \"sheetName\" TEXT, \"sheetIsFoil\" BOOLEAN, \"sheetHasBalanceColors\" BOOLEAN, \"sheetTotalWeight\" INTEGER)"
+    ],
+    [
+      "table",
+      "setDecks",
+      "setDecks",
+      "CREATE TABLE \"setDecks\" (\"setCode\" TEXT, \"code\" TEXT, \"name\" TEXT, \"type\" TEXT, \"releaseDate\" TEXT, \"source\" TEXT, \"sealedProductUuids\" TEXT, \"sourceSetCodes\" TEXT, \"mainBoard\" TEXT, \"sideBoard\" TEXT, \"commander\" TEXT, \"displayCommander\" TEXT, \"tokens\" TEXT, \"planes\" TEXT, \"schemes\" TEXT)"
+    ],
+    [
+      "table",
+      "setTranslations",
+      "setTranslations",
+      "CREATE TABLE \"setTranslations\" (\"code\" TEXT, \"language\" TEXT, \"translation\" TEXT)"
+    ],
+    [
+      "table",
+      "sets",
+      "sets",
+      "CREATE TABLE \"sets\" (\"code\" TEXT, \"name\" TEXT, \"tokenSetCode\" TEXT, \"releaseDate\" TEXT, \"type\" TEXT, \"isOnlineOnly\" BOOLEAN, \"isFoilOnly\" BOOLEAN, \"isNonFoilOnly\" BOOLEAN, \"parentCode\" TEXT, \"totalSetSize\" INTEGER, \"baseSetSize\" INTEGER, \"keyruneCode\" TEXT, \"isPartialPreview\" BOOLEAN, \"isForeignOnly\" BOOLEAN, \"isPaperOnly\" BOOLEAN, \"languages\" TEXT, \"mtgoCode\" TEXT, \"tcgplayerGroupId\" INTEGER, \"block\" TEXT, \"mcmId\" INTEGER, \"mcmName\" TEXT, \"mcmIdExtras\" INTEGER)"
+    ],
+    [
+      "table",
+      "tokenIdentifiers",
+      "tokenIdentifiers",
+      "CREATE TABLE \"tokenIdentifiers\" (\"uuid\" TEXT, \"scryfallId\" TEXT, \"scryfallOracleId\" TEXT, \"scryfallIllustrationId\" TEXT, \"scryfallCardBackId\" TEXT, \"mcmId\" TEXT, \"mcmMetaId\" TEXT, \"mtgArenaId\" TEXT, \"mtgoId\" TEXT, \"mtgoFoilId\" TEXT, \"multiverseId\" TEXT, \"tcgplayerProductId\" TEXT, \"tcgplayerEtchedProductId\" TEXT, \"tcgplayerAlternativeFoilProductId\" TEXT, \"cardKingdomId\" TEXT, \"cardKingdomFoilId\" TEXT, \"cardKingdomEtchedId\" TEXT, \"cardsphereId\" TEXT, \"cardsphereAlternativeFoilId\" TEXT, \"cardsphereEtchedId\" TEXT, \"cardsphereFoilId\" TEXT, \"deckboxId\" TEXT, \"mtgjsonFoilVersionId\" TEXT, \"mtgjsonNonFoilVersionId\" TEXT, \"mtgjsonV4Id\" TEXT)"
+    ],
+    [
+      "table",
+      "tokenProductIdentifiers",
+      "tokenProductIdentifiers",
+      "CREATE TABLE \"tokenProductIdentifiers\" (\"tokenProductUuid\" TEXT, \"tcgplayerProductId\" TEXT, \"tcgplayerPurchaseUrl\" TEXT)"
+    ],
+    [
+      "table",
+      "tokenProductParts",
+      "tokenProductParts",
+      "CREATE TABLE \"tokenProductParts\" (\"tokenProductUuid\" TEXT, \"uuid\" TEXT)"
+    ],
+    [
+      "table",
+      "tokenProducts",
+      "tokenProducts",
+      "CREATE TABLE \"tokenProducts\" (\"uuid\" TEXT, \"faceAttribute\" TEXT)"
+    ],
+    [
+      "table",
+      "tokens",
+      "tokens",
+      "CREATE TABLE \"tokens\" (\"artist\" TEXT, \"artistIds\" TEXT, \"asciiName\" TEXT, \"attractionLights\" TEXT, \"availability\" TEXT, \"boosterTypes\" TEXT, \"borderColor\" TEXT, \"colorIdentity\" TEXT, \"colorIndicator\" TEXT, \"colors\" TEXT, \"edhrecSaltiness\" REAL, \"faceName\" TEXT, \"finishes\" TEXT, \"flavorName\" TEXT, \"flavorText\" TEXT, \"frameEffects\" TEXT, \"frameVersion\" TEXT, \"isFullArt\" BOOLEAN, \"isFunny\" BOOLEAN, \"isOversized\" BOOLEAN, \"isPromo\" BOOLEAN, \"isReprint\" BOOLEAN, \"isTextless\" BOOLEAN, \"keywords\" TEXT, \"language\" TEXT, \"layout\" TEXT, \"manaCost\" TEXT, \"name\" TEXT, \"number\" TEXT, \"orientation\" TEXT, \"originalText\" TEXT, \"otherFaceIds\" TEXT, \"power\" TEXT, \"printedType\" TEXT, \"producedMana\" TEXT, \"promoTypes\" TEXT, \"relatedCards\" TEXT, \"securityStamp\" TEXT, \"setCode\" TEXT, \"side\" TEXT, \"signature\" TEXT, \"skuIds\" TEXT, \"sourceProducts\" TEXT, \"subtypes\" TEXT, \"supertypes\" TEXT, \"text\" TEXT, \"toughness\" TEXT, \"type\" TEXT, \"types\" TEXT, \"uuid\" TEXT, \"watermark\" TEXT)"
+    ]
+  ],
+  "tables": {
+    "cards": [
+      "uuid",
+      "setCode",
+      "number",
+      "name",
+      "printedName",
+      "asciiName",
+      "layout",
+      "side",
+      "faceName",
+      "facePrintedName",
+      "faceManaValue",
+      "faceConvertedManaCost",
+      "cardParts",
+      "relatedCards",
+      "otherFaceIds",
+      "variations",
+      "manaCost",
+      "manaValue",
+      "colors",
+      "colorIdentity",
+      "colorIndicator",
+      "producedMana",
+      "text",
+      "types",
+      "type",
+      "subtypes",
+      "supertypes",
+      "keywords",
+      "power",
+      "toughness",
+      "loyalty",
+      "defense",
+      "hand",
+      "life",
+      "hasAlternativeDeckLimit",
+      "leadershipSkills",
+      "isGameChanger",
+      "isFunny",
+      "isOnlineOnly",
+      "isOversized",
+      "isAlternative",
+      "isRebalanced",
+      "isPromo",
+      "isTextless",
+      "isReserved",
+      "isReprint",
+      "rarity",
+      "finishes",
+      "availability",
+      "language",
+      "originalReleaseDate",
+      "isStorySpotlight",
+      "edhrecRank",
+      "edhrecSaltiness",
+      "attractionLights",
+      "subsets",
+      "isFullArt",
+      "isTimeshifted",
+      "originalPrintings",
+      "duelDeck",
+      "faceFlavorName",
+      "flavorName",
+      "hasContentWarning",
+      "originalText",
+      "printedText",
+      "printedType",
+      "printings",
+      "rebalancedPrintings",
+      "artist",
+      "artistIds",
+      "borderColor",
+      "flavorText",
+      "frameEffects",
+      "frameVersion",
+      "promoTypes",
+      "securityStamp",
+      "signature",
+      "watermark"
+    ],
+    "tokens": [
+      "uuid",
+      "setCode",
+      "number",
+      "name",
+      "asciiName",
+      "layout",
+      "side",
+      "faceName",
+      "manaCost",
+      "colors",
+      "colorIdentity",
+      "colorIndicator",
+      "producedMana",
+      "text",
+      "types",
+      "type",
+      "subtypes",
+      "supertypes",
+      "keywords",
+      "power",
+      "toughness",
+      "otherFaceIds",
+      "relatedCards",
+      "isFunny",
+      "isOversized",
+      "isPromo",
+      "isReprint",
+      "availability",
+      "language",
+      "attractionLights",
+      "edhrecSaltiness",
+      "flavorName",
+      "orientation",
+      "originalText",
+      "printedType",
+      "artist",
+      "artistIds",
+      "borderColor",
+      "finishes",
+      "flavorText",
+      "frameEffects",
+      "frameVersion",
+      "isFullArt",
+      "isTextless",
+      "promoTypes",
+      "securityStamp",
+      "signature",
+      "watermark"
+    ],
+    "cardIdentifiers": [
+      "uuid",
+      "scryfallId",
+      "scryfallOracleId",
+      "scryfallIllustrationId",
+      "scryfallCardBackId",
+      "mcmId",
+      "mcmMetaId",
+      "mtgArenaId",
+      "mtgoId",
+      "mtgoFoilId",
+      "multiverseId",
+      "tcgplayerProductId",
+      "tcgplayerEtchedProductId",
+      "tcgplayerAlternativeFoilProductId",
+      "cardKingdomId",
+      "cardKingdomFoilId",
+      "cardKingdomEtchedId",
+      "cardsphereId",
+      "cardsphereAlternativeFoilId",
+      "cardsphereEtchedId",
+      "cardsphereFoilId",
+      "deckboxId",
+      "mtgjsonFoilVersionId",
+      "mtgjsonNonFoilVersionId",
+      "mtgjsonV4Id"
+    ],
+    "tokenIdentifiers": [
+      "uuid",
+      "scryfallId",
+      "scryfallOracleId",
+      "scryfallIllustrationId",
+      "scryfallCardBackId",
+      "mcmId",
+      "mcmMetaId",
+      "mtgArenaId",
+      "mtgoId",
+      "mtgoFoilId",
+      "multiverseId",
+      "tcgplayerProductId",
+      "tcgplayerEtchedProductId",
+      "tcgplayerAlternativeFoilProductId",
+      "cardKingdomId",
+      "cardKingdomFoilId",
+      "cardKingdomEtchedId",
+      "cardsphereId",
+      "cardsphereAlternativeFoilId",
+      "cardsphereEtchedId",
+      "cardsphereFoilId",
+      "deckboxId",
+      "mtgjsonFoilVersionId",
+      "mtgjsonNonFoilVersionId",
+      "mtgjsonV4Id"
+    ],
+    "cardLegalities": [
+      "uuid",
+      "alchemy",
+      "brawl",
+      "commander",
+      "competitivebrawl",
+      "duel",
+      "future",
+      "gladiator",
+      "historic",
+      "legacy",
+      "modern",
+      "oathbreaker",
+      "oldschool",
+      "pauper",
+      "paupercommander",
+      "penny",
+      "pioneer",
+      "predh",
+      "premodern",
+      "standard",
+      "standardbrawl",
+      "timeless",
+      "tlr",
+      "vintage"
+    ],
+    "cardRulings": [
+      "uuid",
+      "date",
+      "text"
+    ],
+    "sets": [
+      "code",
+      "mtgoCode",
+      "name",
+      "block",
+      "releaseDate",
+      "type",
+      "isOnlineOnly",
+      "isFoilOnly",
+      "tcgplayerGroupId",
+      "isNonFoilOnly",
+      "parentCode",
+      "totalSetSize",
+      "baseSetSize",
+      "keyruneCode",
+      "isPartialPreview",
+      "isForeignOnly",
+      "isPaperOnly",
+      "languages",
+      "tokenSetCode",
+      "mcmId",
+      "mcmName",
+      "mcmIdExtras"
+    ],
+    "meta": [
+      "date",
+      "version"
+    ]
+  },
+  "unique_keys": {
+    "cards": "uuid",
+    "tokens": "uuid",
+    "cardIdentifiers": "uuid",
+    "tokenIdentifiers": "uuid",
+    "cardLegalities": "uuid",
+    "sets": "code"
+  },
+  "relationships": [
+    [
+      "cardIdentifiers",
+      "uuid",
+      "cards",
+      "uuid"
+    ],
+    [
+      "cardLegalities",
+      "uuid",
+      "cards",
+      "uuid"
+    ],
+    [
+      "cardRulings",
+      "uuid",
+      "cards",
+      "uuid"
+    ],
+    [
+      "tokenIdentifiers",
+      "uuid",
+      "tokens",
+      "uuid"
+    ],
+    [
+      "cards",
+      "setCode",
+      "sets",
+      "code"
+    ],
+    [
+      "tokens",
+      "setCode",
+      "sets",
+      "tokenSetCode"
+    ]
+  ],
+  "historical_contract": {
+    "cardIdentifiers": {
+      "uuid": "TEXT",
+      "scryfallId": "TEXT",
+      "scryfallOracleId": "TEXT",
+      "scryfallIllustrationId": "TEXT",
+      "scryfallCardBackId": "TEXT",
+      "mcmId": "TEXT",
+      "mcmMetaId": "TEXT",
+      "mtgArenaId": "TEXT",
+      "mtgoId": "TEXT",
+      "mtgoFoilId": "TEXT",
+      "multiverseId": "TEXT",
+      "tcgplayerProductId": "TEXT",
+      "tcgplayerEtchedProductId": "TEXT",
+      "tcgplayerAlternativeFoilProductId": "TEXT",
+      "cardKingdomId": "TEXT",
+      "cardKingdomFoilId": "TEXT",
+      "cardKingdomEtchedId": "TEXT",
+      "cardsphereId": "TEXT",
+      "cardsphereAlternativeFoilId": "TEXT",
+      "cardsphereEtchedId": "TEXT",
+      "cardsphereFoilId": "TEXT",
+      "deckboxId": "TEXT",
+      "mtgjsonFoilVersionId": "TEXT",
+      "mtgjsonNonFoilVersionId": "TEXT",
+      "mtgjsonV4Id": "TEXT"
+    },
+    "cardLegalities": {
+      "uuid": "TEXT",
+      "alchemy": "TEXT",
+      "brawl": "TEXT",
+      "commander": "TEXT",
+      "competitivebrawl": "TEXT",
+      "duel": "TEXT",
+      "future": "TEXT",
+      "gladiator": "TEXT",
+      "historic": "TEXT",
+      "legacy": "TEXT",
+      "modern": "TEXT",
+      "oathbreaker": "TEXT",
+      "oldschool": "TEXT",
+      "pauper": "TEXT",
+      "paupercommander": "TEXT",
+      "penny": "TEXT",
+      "pioneer": "TEXT",
+      "predh": "TEXT",
+      "premodern": "TEXT",
+      "standard": "TEXT",
+      "standardbrawl": "TEXT",
+      "timeless": "TEXT",
+      "tlr": "TEXT",
+      "vintage": "TEXT"
+    },
+    "cardRulings": {
+      "uuid": "TEXT",
+      "date": "NUM",
+      "text": "TEXT"
+    },
+    "cards": {
+      "uuid": "TEXT",
+      "setCode": "TEXT",
+      "number": "TEXT",
+      "name": "TEXT",
+      "printedName": "TEXT",
+      "asciiName": "TEXT",
+      "layout": "TEXT",
+      "side": "TEXT",
+      "faceName": "TEXT",
+      "facePrintedName": "TEXT",
+      "faceManaValue": "REAL",
+      "faceConvertedManaCost": "REAL",
+      "cardParts": "TEXT",
+      "relatedCards": "TEXT",
+      "otherFaceIds": "TEXT",
+      "variations": "TEXT",
+      "manaCost": "TEXT",
+      "manaValue": "REAL",
+      "colors": "TEXT",
+      "colorIdentity": "TEXT",
+      "colorIndicator": "TEXT",
+      "producedMana": "TEXT",
+      "text": "TEXT",
+      "types": "TEXT",
+      "type": "TEXT",
+      "subtypes": "TEXT",
+      "supertypes": "TEXT",
+      "keywords": "TEXT",
+      "power": "TEXT",
+      "toughness": "TEXT",
+      "loyalty": "TEXT",
+      "defense": "TEXT",
+      "hand": "TEXT",
+      "life": "TEXT",
+      "hasAlternativeDeckLimit": "NUM",
+      "leadershipSkills": "TEXT",
+      "isGameChanger": "NUM",
+      "isFunny": "NUM",
+      "isOnlineOnly": "NUM",
+      "isOversized": "NUM",
+      "isAlternative": "NUM",
+      "isRebalanced": "NUM",
+      "isPromo": "NUM",
+      "isTextless": "NUM",
+      "isReserved": "NUM",
+      "isReprint": "NUM",
+      "rarity": "TEXT",
+      "finishes": "TEXT",
+      "availability": "TEXT",
+      "language": "TEXT",
+      "originalReleaseDate": "TEXT",
+      "isStorySpotlight": "NUM",
+      "edhrecRank": "INT",
+      "edhrecSaltiness": "REAL",
+      "attractionLights": "TEXT",
+      "subsets": "TEXT",
+      "isFullArt": "NUM",
+      "isTimeshifted": "NUM",
+      "originalPrintings": "TEXT"
+    },
+    "meta": {
+      "date": "TEXT",
+      "version": "TEXT"
+    },
+    "sets": {
+      "code": "TEXT",
+      "mtgoCode": "TEXT",
+      "name": "TEXT",
+      "block": "TEXT",
+      "releaseDate": "TEXT",
+      "type": "TEXT",
+      "isOnlineOnly": "NUM",
+      "isFoilOnly": "NUM",
+      "tcgplayerGroupId": "INT",
+      "isNonFoilOnly": "NUM",
+      "parentCode": "TEXT",
+      "totalSetSize": "INT",
+      "baseSetSize": "INT",
+      "keyruneCode": "TEXT",
+      "isPartialPreview": "NUM",
+      "isForeignOnly": "NUM",
+      "isPaperOnly": "NUM",
+      "languages": "TEXT",
+      "tokenSetCode": "TEXT",
+      "mcmId": "INT",
+      "mcmName": "TEXT",
+      "mcmIdExtras": "INT"
+    },
+    "tokenIdentifiers": {
+      "uuid": "TEXT",
+      "scryfallId": "TEXT",
+      "scryfallOracleId": "TEXT",
+      "scryfallIllustrationId": "TEXT",
+      "scryfallCardBackId": "TEXT",
+      "mcmId": "TEXT",
+      "mcmMetaId": "TEXT",
+      "mtgArenaId": "TEXT",
+      "mtgoId": "TEXT",
+      "mtgoFoilId": "TEXT",
+      "multiverseId": "TEXT",
+      "tcgplayerProductId": "TEXT",
+      "tcgplayerEtchedProductId": "TEXT",
+      "tcgplayerAlternativeFoilProductId": "TEXT",
+      "cardKingdomId": "TEXT",
+      "cardKingdomFoilId": "TEXT",
+      "cardKingdomEtchedId": "TEXT",
+      "cardsphereId": "TEXT",
+      "cardsphereAlternativeFoilId": "TEXT",
+      "cardsphereEtchedId": "TEXT",
+      "cardsphereFoilId": "TEXT",
+      "deckboxId": "TEXT",
+      "mtgjsonFoilVersionId": "TEXT",
+      "mtgjsonNonFoilVersionId": "TEXT",
+      "mtgjsonV4Id": "TEXT"
+    },
+    "tokens": {
+      "uuid": "TEXT",
+      "setCode": "TEXT",
+      "number": "TEXT",
+      "name": "TEXT",
+      "asciiName": "TEXT",
+      "layout": "TEXT",
+      "side": "TEXT",
+      "faceName": "TEXT",
+      "manaCost": "TEXT",
+      "colors": "TEXT",
+      "colorIdentity": "TEXT",
+      "colorIndicator": "TEXT",
+      "producedMana": "TEXT",
+      "text": "TEXT",
+      "types": "TEXT",
+      "type": "TEXT",
+      "subtypes": "TEXT",
+      "supertypes": "TEXT",
+      "keywords": "TEXT",
+      "power": "TEXT",
+      "toughness": "TEXT",
+      "otherFaceIds": "TEXT",
+      "relatedCards": "TEXT",
+      "isFunny": "NUM",
+      "isOversized": "NUM",
+      "isPromo": "NUM",
+      "isReprint": "NUM",
+      "availability": "TEXT",
+      "language": "TEXT",
+      "attractionLights": "TEXT",
+      "edhrecSaltiness": "REAL"
+    }
+  },
+  "indexes": [
+    {
+      "name": "idx_cardIdentifiers_oracleid",
+      "table": "cardIdentifiers",
+      "columns": [
+        "scryfallOracleId"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cardIdentifiers_scryfallid",
+      "table": "cardIdentifiers",
+      "columns": [
+        "scryfallId"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cardIdentifiers_uuid",
+      "table": "cardIdentifiers",
+      "columns": [
+        "uuid"
+      ],
+      "unique": true
+    },
+    {
+      "name": "idx_cardLegalities_uuid",
+      "table": "cardLegalities",
+      "columns": [
+        "uuid"
+      ],
+      "unique": true
+    },
+    {
+      "name": "idx_cardRulings_uuid",
+      "table": "cardRulings",
+      "columns": [
+        "uuid"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_facePrintedName",
+      "table": "cards",
+      "columns": [
+        "facePrintedName"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_name",
+      "table": "cards",
+      "columns": [
+        "name"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_printedName",
+      "table": "cards",
+      "columns": [
+        "printedName"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_setCode",
+      "table": "cards",
+      "columns": [
+        "setCode"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_set_number",
+      "table": "cards",
+      "columns": [
+        "setCode",
+        "number"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_cards_uuid",
+      "table": "cards",
+      "columns": [
+        "uuid"
+      ],
+      "unique": true
+    },
+    {
+      "name": "idx_sets_code",
+      "table": "sets",
+      "columns": [
+        "code"
+      ],
+      "unique": true
+    },
+    {
+      "name": "idx_sets_name",
+      "table": "sets",
+      "columns": [
+        "name"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_sets_tokenSetCode",
+      "table": "sets",
+      "columns": [
+        "tokenSetCode"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_tokenIdentifiers_oracleid",
+      "table": "tokenIdentifiers",
+      "columns": [
+        "scryfallOracleId"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_tokenIdentifiers_scryfallid",
+      "table": "tokenIdentifiers",
+      "columns": [
+        "scryfallId"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_tokenIdentifiers_uuid",
+      "table": "tokenIdentifiers",
+      "columns": [
+        "uuid"
+      ],
+      "unique": true
+    },
+    {
+      "name": "idx_tokens_name",
+      "table": "tokens",
+      "columns": [
+        "name"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_tokens_set_number",
+      "table": "tokens",
+      "columns": [
+        "setCode",
+        "number"
+      ],
+      "unique": false
+    },
+    {
+      "name": "idx_tokens_uuid",
+      "table": "tokens",
+      "columns": [
+        "uuid"
+      ],
+      "unique": true
+    }
+  ]
+}
