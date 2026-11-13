@@ -38,25 +38,22 @@ python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.2.
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
 
-## Profile v2.2 information and index policy
+## Current SQLite data profile
 
-The explicit [profile](profiles/v2_2.json) pins the complete official SQLite DDL observed for MTGJSON `5.3.0+20261113`. It rejects added, removed or changed tables, columns, indexes, views and triggers, including new fields in tables that would otherwise be omitted. A future schema change requires inventory, human review, a new versioned profile and tests. The converter supports the unconstrained source tables pinned here; it rejects new source constraints rather than silently losing them.
+The current [profile](profiles/v2_2.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It pins the complete upstream schema observed for MTGJSON `5.3.0+20261113` and **fails closed** if MTGJSON adds, removes or changes its schema. Changes require an explicit profile review rather than silent data loss.
 
-Profile 2.2 preserves all **191 historical fields across eight tables**, restores the 14 fields missing from 2.1, retains its useful additions, and conservatively keeps further source card-level printing/artwork/reference metadata. See the [field and index decisions](docs/information-index-plan.md), [fixed historical contract](contracts/07nov-fields.json), and the separately delivered complete gapmatrix.
+The output contains **8 tables, 227 columns and 20 explicit indexes**. It preserves every selected record, NULL, face relationship, card printing and language, including printed/original names and text. There is no English-only filter or card-type exclusion.
 
-| Area | Policy |
+| Area | Current policy |
 | --- | --- |
-| Cards/tokens | Keep every printing, face, language and NULL. Preserve canonical/printed/original text, identity/layout characteristics, historical flags, finishes, dates and rankings; useful printing/artwork/frame/promo/watermark metadata remain available |
-| Identifiers/legalities/rulings/sets/meta | Preserve all historical fields and all existing 2.1 fields/rows |
-| Excluded data | cardForeignData and setTranslations; sales/product/booster tables; card/token SKU, source-product and booster-packaging fields |
-| Historical contract | Numeric profiles 2.2 and later must match the independent 07Nov contract file; removing/rewriting the embedded contract cannot disable it. Missing source fields or changed affinities fail before conversion |
-| SQLite type names | Historical CTAS aliases INT/NUM and source INTEGER/BOOLEAN/DATE have equivalent SQLite affinities; exact source values and NULLs are copied, not translated or cast |
-| Identity indexes | One actual UNIQUE index per UUID/code invariant; no duplicate ordinary+UNIQUE exact keys |
-| Printing/Oracle indexes | Explicit non-unique Scryfall and Oracle ID indexes, for cards and tokens; multi-face records share IDs and are never merged |
-| Name/CSV routes | Exact name, printedName, facePrintedName and setCode/collector-number lookups. Keep the historical cards.setCode index after measuring the composite-only regression |
-| Source audit | Pin all original source DDL, including omitted tables; upstream schema drift remains an error |
+| Cards and tokens | Keep identities, set/collector numbers, names, Oracle and printed text, mana/type information, multiple faces, relationships, flags, printing and artwork/reference metadata |
+| External identifiers, legalities and rulings | Keep all selected external IDs, per-format legality information and card-linked rulings |
+| Sets and source metadata | Keep codes, set identities, dates, language metadata, source version/date and token-set links |
+| Removed data | Omit localized translation table `cardForeignData`, set-name translations, product/purchase/booster/deck-list tables and six packaging-related card/token fields |
+| Source safety | Verify the official source checksum, pin the upstream schema and reject missing required fields, unknown schema changes or broken relationships |
+| Lookup policy | Use verified UUID/code identity indexes and non-unique Scryfall printing/Oracle-ID indexes where multi-face records share external IDs |
 
-No English-only filter, fuzzy matching, invented translation or rules inference is performed. Printed/reference/flavor metadata stays separate from Oracle rules. Popularity metrics remain snapshot metadata, not a strength guarantee. The historical 07Nov bytes are a verified minimum field/index reference, not an output-byte target. Profile 2.1 remains unchanged and usable for historical reproduction.
+Every retained value is copied directly from the verified source; no fuzzy matching, translation, Oracle-text reconstruction, rules inference or card-strength claims are added. For exact selections, see the [complete current SQLite data inventory](docs/PROFILE_2_2_DATA_INVENTORY.md).
 
 ### Exact data retention and removal
 
@@ -66,7 +63,7 @@ From 20 source tables, the output retains 8 and omits 12. The complete `cardFore
 
 **Verification status:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md).
 
-No automatic weekly schedule, public release, publication or approval to merge is implied by this result.
+No automatic weekly schedule, public Release or publication is enabled.
 
 ## Query audit
 
@@ -77,7 +74,7 @@ python benchmarks/query_audit.py --database path/to/database.sqlite \
 
 Use the same saved case file for every compared database. The audit records exact SQL/parameters, result counts/digests, plans for every sample, five warm-cache timing batches and medians, and per-index dbstat footprints. Missing footprint capability is reported as null plus an error, never as zero bytes. These are sampled lookup workloads with full result retrieval, not whole-database latency promises or cold-cache tests. Oracle cohorts include singleton, moderate and high-fanout IDs; printing samples include singleton and shared multi-face IDs. Unknown-ID cases are explicitly synthetic. No personal collection is required.
 
-Compare different snapshots only as context. The final audit also compares 2.2 with a same-data variant carrying 2.1 indexes, so index effects can be separated from restored/wider data. More indexes do not imply every query gets faster; detailed regressions and tradeoffs belong in the report.
+These are reproducible **sampled** query measurements, not a guarantee that every lookup is faster. Read the [current acceptance report](docs/acceptance-profile-2.2.md) for actual timings and limitations.
 
 ## Reproducibility and provenance
 
@@ -85,7 +82,7 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 ## Automation and troubleshooting
 
-The workflow runs fixture tests on PR updates. Real-data preparation is **manual only** (`workflow_dispatch`), with read-only repository permissions, per-ref concurrency and a timeout. Only JSON evidence is uploaded as an Actions artifact. There is no schedule, Release action, dataset upload or repository write permission. **Important:** GitHub requires a `workflow_dispatch` workflow to exist on the repository's default branch for normal manual execution; while this PR remains unmerged, the manual full-data button is not available from `main`. The successful hosted run above used a temporary PR-only trigger that was removed immediately after acceptance. A future weekly `schedule` also runs on the default branch and must be reviewed in a **separate PR**; it is not part of profile-2.2 acceptance. An optional manual input `previous_upstream_sha256` (from a previously successful manifest) compares the current official checksum and skips the download/build when unchanged. This is an upstream-change check, not revalidation of a prior dataset. Omit it when testing a new profile or tool version. Without that input, hosted runs rebuild on their fresh disks; local package reuse performs full revalidation.
+The workflow runs fixture tests on PR updates. Real-data preparation is **manual only** (`workflow_dispatch`), with read-only repository permissions, per-ref concurrency and a timeout. Only JSON evidence is uploaded as an Actions artifact. There is no schedule, Release action, dataset upload or repository write permission. Manual full-data runs are available through the workflow on `main`. A future weekly `schedule` needs a separate reviewed change to the default branch and is not enabled here. An optional manual input `previous_upstream_sha256` (from a previously successful manifest) compares the current official checksum and skips the download/build when unchanged. This is an upstream-change check, not revalidation of a prior dataset. Omit it when testing a new profile or tool version. Without that input, hosted runs rebuild on their fresh disks; local package reuse performs full revalidation.
 
 - Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
 - Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
@@ -101,4 +98,3 @@ The official [MTGJSON brand-assets policy](https://mtgjson.com/brand-assets/) sa
 
 The MIT [LICENSE](LICENSE) covers our original project code and documentation; it is not blanket permission to republish Wizards of the Coast card text, artwork or all other third-party data. See the official [Wizards Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). Public database release automation needs a separate, recorded rights review and explicit authorization.
 
-The retained profile 2.1 explicitly reviews the 2026-11-13 upstream change: only the source `sets` column order changed; names/types/constraints remain equal. Retained output columns and order are unchanged. Earlier strict profiles reject this source as designed.
