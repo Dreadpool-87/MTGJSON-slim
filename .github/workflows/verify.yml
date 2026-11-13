@@ -1,0 +1,62 @@
+name: Verify MTGJSON slim
+on:
+  workflow_dispatch:
+    inputs:
+      previous_upstream_sha256:
+        description: Optional digest from a previous successful manifest; skip unchanged upstream
+        required: false
+        type: string
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: mtgjson-slim-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -v
+  real-data:
+    if: github.event_name == 'workflow_dispatch'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and verify official SQLite archive
+        id: download
+        env:
+          PREVIOUS_SHA256: ${{ inputs.previous_upstream_sha256 }}
+        run: |
+          python slim.py download --directory downloads --report evidence/download.json \
+            --previous-sha256 "$PREVIOUS_SHA256"
+          python -c "import json,os; r=json.load(open('evidence/download.json')); print('changed=' + str(r['status'] != 'UNCHANGED').lower(), file=open(os.environ['GITHUB_OUTPUT'],'a'))"
+      - name: Prepare and validate without publishing datasets
+        if: steps.download.outputs.changed == 'true'
+        shell: bash
+        run: |
+          python slim.py build --archive downloads/AllPrintings.sqlite.xz \
+            --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
+            --profile profiles/v2_2.json --output-dir output \
+            --tool-commit "$GITHUB_SHA" --report evidence/build.json
+      - name: Retain reports only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-evidence
+          path: |
+            evidence/*.json
+            output/manifest.json
+            output/validation.json
+            output/source-inventory.json
+          if-no-files-found: warn
+          retention-days: 14
