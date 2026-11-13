@@ -1,3 +1,5 @@
+> Historical profile **2.1** acceptance at the time it was tested. Its `NOT EXECUTED` hosted-build statement is preserved as contemporaneous evidence; the later [v2.2 GitHub-hosted build has passed](acceptance-profile-2.2.md). This page does not describe the currently selected profile.
+
 # Profile 2.1 acceptance — 2026-11-13
 
 The two newly completed full builds use official MTGJSON `5.3.0+20261113`, the same profile file, tool commit and runtime. The original unfinished scratch builds were lost; their success is not assumed. Official upstream had changed, so a third v1-selection control was built on the same current source to isolate the profile change. Original v1 results remain a separate, verified Drive evidence baseline.
