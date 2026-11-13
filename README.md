@@ -58,6 +58,8 @@ Profile 2.2 preserves all **191 historical fields across eight tables**, restore
 
 No English-only filter, fuzzy matching, invented translation or rules inference is performed. Printed/reference/flavor metadata stays separate from Oracle rules. Popularity metrics remain snapshot metadata, not a strength guarantee. The historical 07Nov bytes are a verified minimum field/index reference, not an output-byte target. Profile 2.1 remains unchanged and usable for historical reproduction.
 
+Current verified outcomes: [profile 2.2 acceptance](docs/acceptance-profile-2.2.md).
+
 ## Query audit
 
 ```bash
