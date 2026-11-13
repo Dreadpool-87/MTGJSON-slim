@@ -58,7 +58,15 @@ Profile 2.2 preserves all **191 historical fields across eight tables**, restore
 
 No English-only filter, fuzzy matching, invented translation or rules inference is performed. Printed/reference/flavor metadata stays separate from Oracle rules. Popularity metrics remain snapshot metadata, not a strength guarantee. The historical 07Nov bytes are a verified minimum field/index reference, not an output-byte target. Profile 2.1 remains unchanged and usable for historical reproduction.
 
-Current verified outcomes: [profile 2.2 acceptance](docs/acceptance-profile-2.2.md).
+### Exact data retention and removal
+
+For an **exhaustive, table-by-table and field-by-field list** of what is kept and what is removed, read **[Profile 2.2 — retained and omitted SQLite data](docs/PROFILE_2_2_DATA_INVENTORY.md)**. It is checked against the actual versioned profile, not an approximate description.
+
+From 20 source tables, the output retains 8 and omits 12. The complete `cardForeignData` and `setTranslations` tables and sales, sealed-product, booster, deck-list and token-product tables are excluded. Within `cards` and `tokens`, the only source fields dropped are `boosterTypes`, `skuIds` and `sourceProducts` (three fields per table, six total). Every field of the six other retained tables remains. Original non-English physical printing records and printed names are **not** removed. Schema pinning still checks all omitted upstream tables for drift.
+
+**Verification status:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md).
+
+No automatic weekly schedule, public release, publication or approval to merge is implied by this result.
 
 ## Query audit
 
@@ -89,8 +97,8 @@ The workflow runs fixture tests on PR updates. Real-data preparation is **manual
 
 **Powered by [MTGJSON](https://mtgjson.com/).** Independent community project; not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
 
-MTGJSON's [license](https://mtgjson.com/license/) and [brand conditions](https://mtgjson.com/brand-assets/) apply to its materials. This project uses text credit, without copying a logo. Official brand assets must remain unmodified and must not imply endorsement.
+The official [MTGJSON brand-assets policy](https://mtgjson.com/brand-assets/) says credit is appreciated but not mandatory. If future maintainers choose its official PNG/SVG logo, it **must not be altered or used to imply endorsement**. The repository currently uses text credit only, no downloaded logos. Read the [MTGJSON license](https://mtgjson.com/license/) and our detailed [third-party, brand, and distribution notices](THIRD_PARTY_NOTICES.md).
 
-The MIT [LICENSE](LICENSE) covers original project code and documentation, not independent rights to all third-party card content. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Public dataset publication requires a separate redistribution-rights review and explicit authorization; this task does not establish legal clearance.
+The MIT [LICENSE](LICENSE) covers our original project code and documentation; it is not blanket permission to republish Wizards of the Coast card text, artwork or all other third-party data. See the official [Wizards Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). Public database release automation needs a separate, recorded rights review and explicit authorization.
 
 The retained profile 2.1 explicitly reviews the 2026-11-13 upstream change: only the source `sets` column order changed; names/types/constraints remain equal. Retained output columns and order are unchanged. Earlier strict profiles reject this source as designed.
