@@ -25,6 +25,6 @@ The initial investigation used `5.3.0+20261112`. On resumption, scratch files we
 
 ## Validation
 
-Regression tests check that no cardForeignData table/index is generated, while changes to the omitted upstream table still fail closed. Non-English names, reciprocal complex faces, canonical rules text and external identifiers remain exact in fixtures. Real acceptance additionally compares every retained row with both the official source and v1, checks all language/layout distributions, all face edges and explicit relation/identity invariants. Both complete v2 builds must use the same source, profile, tool commit and runtime.
+Regression tests check that no cardForeignData table/index is generated, while changes to the omitted upstream table still fail closed. Non-English names, reciprocal complex faces, canonical rules text and external identifiers remain exact in fixtures. Real acceptance additionally compares every retained row with both the official source and v1, checks all language/layout distributions, all face edges and explicit relation/identity invariants. Both completed profile 2.1 builds used the same source, profile, tool commit and runtime. See [acceptance results](acceptance-profile-2.1.md).
 
 The complete queries, example records and field statistics are included in the separately delivered `language-investigation.json`. No other language data was demonstrated safe to remove without losing reference information; no additional language deletion is performed.

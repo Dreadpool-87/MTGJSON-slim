@@ -13,3 +13,7 @@ Implementation choice: no blind English-only row filter, UUID deduplication or l
 ## Resumption adjustment
 
 The original temporary data and incomplete builds were lost. Official upstream changed from 2026-11-12 to 2026-11-13. Only the source sets column order changed; an explicit name/type/constraint comparison reviewed this change for profile 2.1. Two 2.1 builds and a v1-selection control now use the same current source, while the verified prior Drive evidence remains the historical baseline. The active file is profiles/v2_1.json; old profile files are removed from the branch but preserved in Git history.
+
+## Completed verification
+
+Two profile 2.1 builds and the current-source v1-selection control completed successfully. Direct byte comparisons, full retained-row digests, schema/count comparisons, language/layout distributions and all face edges passed. See acceptance-profile-2.1.md. Delivery target for the new Dutch report and evidence package is the user-designated Drive folder, separately from the v1 results.
