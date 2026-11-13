@@ -1,4 +1,4 @@
-> Previous profile v1 results, retained as the comparison baseline. Current v2 results will be recorded separately.
+> Historical **profile v1** evidence only. Do not treat the test counts, foreign-data inclusion, file sizes or historical hosted-build status below as the active profile. For profile **2.2**, see [current acceptance](acceptance-profile-2.2.md) and [exact data inventory](PROFILE_2_2_DATA_INVENTORY.md).
 
 # Local acceptance evidence — 2026-11-13
 
