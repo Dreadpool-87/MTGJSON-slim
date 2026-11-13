@@ -1,3 +1,5 @@
+> Historical v2 / v2.1 language-reduction decision. The current profile is [2.2](../profiles/v2_2.json), which additionally restores missing historical fields and documented metadata. The exclusion of `cardForeignData` is still active; see the [exact current inventory](PROFILE_2_2_DATA_INVENTORY.md).
+
 # Profile v2 language policy
 
 Profile v2 removes the entire selected `cardForeignData` table and its two indexes. It does not generate its rows or its relationship to cards. The original source DDL remains pinned, including omitted tables, so upstream schema changes still fail closed. The immutable v1 policy is available through Git history rather than as an active profile file.
