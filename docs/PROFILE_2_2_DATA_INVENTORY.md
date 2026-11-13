@@ -55,6 +55,36 @@ This is the **machine-checked field inventory** for the existing profile [`profi
 
 `date`, `version`
 
+## Exact source-row counts for the verified 13 November 2026 snapshot
+
+The counts below come from the **actual GitHub-hosted source inventory** in [Actions run 43516913604](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604), archived in [Drive acceptance evidence](https://drive.google.com/file/d/1TsaBRve9Kt0YgVIZBVtB5NJfqmSVMtvq/view). Official source archive SHA-256: `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e`.
+
+| Source table | Source rows | Output status |
+| --- | ---: | --- |
+| `cardForeignData` | 441,563 | Omitted entirely |
+| `cardIdentifiers` | 116,005 | Kept: all rows |
+| `cardLegalities` | 116,005 | Kept: all rows |
+| `cardPurchaseUrls` | 116,005 | Omitted entirely |
+| `cardRulings` | 284,339 | Kept: all rows |
+| `cards` | 116,005 | Kept: all rows |
+| `meta` | 1 | Kept: all rows |
+| `sealedProducts` | 4,327 | Omitted entirely |
+| `setBoosterContents` | 14,414 | Omitted entirely |
+| `setBoosterContentWeights` | 3,400 | Omitted entirely |
+| `setBoosterSheetCards` | 295,590 | Omitted entirely |
+| `setBoosterSheets` | 4,482 | Omitted entirely |
+| `setDecks` | 3,154 | Omitted entirely |
+| `sets` | 882 | Kept: all rows |
+| `setTranslations` | 584 | Omitted entirely |
+| `tokenIdentifiers` | 9,565 | Kept: all rows |
+| `tokenProductIdentifiers` | 16,337 | Omitted entirely |
+| `tokenProductParts` | 18,680 | Omitted entirely |
+| `tokenProducts` | 15,051 | Omitted entirely |
+| `tokens` | 9,565 | Kept: all rows |
+| **TOTAL** | **1,585,954** | **652,367 retained / 933,587 omitted** |
+
+**Warning:** these are **table rows**, not unique cards, printings or lost MTG game data. An excluded purchase-URL or foreign-name row is not an excluded `cards` row. Counts legitimately change when upstream MTGJSON updates, even without a profile change. Do not extrapolate these snapshot counts to future builds.
+
 ## Tables omitted entirely (12 of 20 source tables)
 
 These tables, their source rows and their indexes are **not present** in the slim output:
