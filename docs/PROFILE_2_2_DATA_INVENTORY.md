@@ -4,7 +4,7 @@ This is the **machine-checked field inventory** for the existing profile [`profi
 
 - Pinned upstream source schema: MTGJSON `5.3.0+20261113` (source snapshot). A later upstream change **must** be reviewed and versioned; this inventory must then be regenerated and checked.
 - Output: **8 tables, 227 retained columns, 20 explicit indexes**. The pinned upstream source has **20 tables**. All output rows, values and `NULL`s in the selected tables/columns are preserved from that same verified source; no filtering by language, printing, or card layout.
-- Historical baseline: all **191 fields** in the verified 07 November slim database remain, including the 14 fields missing in profile 2.1. This does **not** mean 07 November and 13 November contain identical card data.
+- All selected columns and complete records are documented below; no output-byte comparison to any other slim dataset is part of the active profile's definition.
 - Converter scope: authoritative source projection and integrity checks, **not** an AI model, MTG gameplay/rules engine, ownership tracker, deck strength evaluator, price service or dataset distribution service.
 - The upstream `source_schema` pin still lists omitted objects for fail-closed source-drift checks. Listed in that pin **does not mean copied into the slim SQLite output**.
 
@@ -151,9 +151,9 @@ No other source column is omitted from `cards` or `tokens`. **No source column i
 
 - The converter verifies the official downloaded archive against the official SHA-256; profiles reject unreviewed source schema drift; output checks include schema, integrity, identities, configured links and full selected-row logical digests against the source.
 - **Profile 2.2 is pinned to a source schema**, not a promise that every future MTGJSON release will build unchanged. Changes in *omitted* source tables also trigger review.
-- The exact historical November 7 archive is an information-contract baseline, **not** a target for byte-identical hashes or static card counts.
+- Row counts and hashes are specific to the identified MTGJSON source snapshot. They may change when upstream card data changes without any change to the profile.
 - Two full local profile-2.2 builds reproduced identical bytes in the same runtime. A GitHub-hosted full-data job also passed on [Actions run 43516913604](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604), but its SQLite/XZ hashes differ from the local build because of different Python/SQLite/runtime details; compare logical selected-table hashes, not cross-runtime raw bytes.
-- Some `setCode`-only lookups were slower in measured samples than profile 2.1; identity and printing lookups improved substantially. See [acceptance report](acceptance-profile-2.2.md) for test scope and limitations.
-- **Consumer compatibility is not implied by historical field preservation.** The profile-2.2 SQLite is **282,390,528 bytes** (approximately 269.3 MiB), which exceeds some consumers' independently configured 256 MiB file-size limits. Consumers may also pin earlier database SHA-256 values. Do not weaken an existing consumer's provenance checks or change another project as part of this converter PR; migrate each consumer separately after this repo is accepted.
+- Query performance depends on the workload and runtime; index presence does not guarantee every lookup is fast. See the [current acceptance report](acceptance-profile-2.2.md) for the measured 21-query sample and limitations.
+- **Consumer compatibility is not automatic.** The profile-2.2 SQLite is **282,390,528 bytes** (approximately 269.3 MiB). An application may impose a smaller file-size limit or require a specific database checksum; consumers must validate each version explicitly before use.
 - **Data availability is not a release.** GitHub Actions uploads JSON validation evidence only; the SQLite/XZ database is not published as a downloadable GitHub Release in this repo. A separate release/distribution design is required before external applications can reliably auto-fetch new versions.
 - A validated local output is **not automatically cleared for public redistribution**; see [third-party notices](../THIRD_PARTY_NOTICES.md) and [MTGJSON brand assets policy](https://mtgjson.com/brand-assets/). No unattended publication or schedule is enabled.
