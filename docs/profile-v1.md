@@ -1,4 +1,4 @@
-> Historical profile v1 reference. The active profile is v2; see [language-policy-v2.md](language-policy-v2.md).
+> Historical **profile v1** reference only; its original profile file is retained in Git history, not the current working tree. The active profile is [v2.2](../profiles/v2_2.json). See [exact retained/omitted v2.2 inventory](PROFILE_2_2_DATA_INVENTORY.md). V1 behavior and removed fields below must not be interpreted as current v2.2 policy.
 
 # Profile v1: complete schema projection
 
