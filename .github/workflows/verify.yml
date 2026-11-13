@@ -7,6 +7,10 @@ on:
         required: false
         type: string
   pull_request:
+  # Tuesday at 07:00 Belgian local time, with automatic DST handling.
+  schedule:
+    - cron: '0 7 * * 2'
+      timezone: 'Europe/Brussels'
 permissions:
   contents: read
 concurrency:
@@ -23,7 +27,7 @@ jobs:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
   real-data:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
