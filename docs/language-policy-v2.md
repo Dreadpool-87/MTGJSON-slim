@@ -4,12 +4,12 @@ Profile v2 removes the entire selected `cardForeignData` table and its two index
 
 ## Evidence-based decisions
 
-The same verified official `5.3.0+20261112` source used for v1 was examined with read-only SQL. Using the same source isolates the policy change from upstream data changes.
+The initial investigation used `5.3.0+20261112`. On resumption, scratch files were gone and official upstream was `5.3.0+20261113`. The new source is re-inventoried, two profile 2.1 builds are repeated, and a v1-selection control is built on that same new source. Previous v1 measurements remain a separate historical baseline. Profile 2.1 reviews only a source sets-column-order change; its retained output selection remains the v2 selection.
 
 | Data | Observed source | Decision |
 | --- | --- | --- |
-| cardForeignData | 442,107 localized reference rows | Remove the entire table as explicitly requested |
-| cards.language | 113,278 English and 2,638 non-English records across 20 languages | Keep every record and language tag |
+| cardForeignData | 441,563 localized reference rows | Remove the entire table as explicitly requested |
+| cards.language | 113,287 English and 2,718 non-English records across 20 languages | Keep every record and language tag |
 | tokens.language | 9,530 English and 35 Japanese records | Keep every record and language tag |
 | Printing identifiers | Every non-English card/token record has its own MTGJSON UUID and a Scryfall printing ID; face records can share a Scryfall ID | Preserve UUIDs and all identifier rows; do not deduplicate by Oracle ID |
 | English Oracle peers | Eight non-English card records lack an English record with the same Oracle ID; thirteen distinct non-English record names do not occur among English records | An English-only filter would lose supported identities |

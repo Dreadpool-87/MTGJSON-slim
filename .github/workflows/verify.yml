@@ -46,7 +46,7 @@ jobs:
         run: |
           python slim.py build --archive downloads/AllPrintings.sqlite.xz \
             --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
-            --profile profiles/v2.json --output-dir output \
+            --profile profiles/v2_1.json --output-dir output \
             --tool-commit "$GITHUB_SHA" --report evidence/build.json
       - name: Retain reports only
         if: always()

@@ -9,3 +9,7 @@ Authoritative change request: remove cardForeignData entirely from the selected 
 5. Update current English documentation and the existing PR; save a separate Dutch v2 report and full evidence package in the designated Drive Test Results folder without replacing the v1 evidence. Mark hosted full-data Actions NOT EXECUTED if the default-branch dispatch constraint remains.
 
 Implementation choice: no blind English-only row filter, UUID deduplication or language-column deletion. A matching Oracle ID is not proof that a separate printing UUID is expendable.
+
+## Resumption adjustment
+
+The original temporary data and incomplete builds were lost. Official upstream changed from 2026-11-12 to 2026-11-13. Only the source sets column order changed; an explicit name/type/constraint comparison reviewed this change for profile 2.1. Two 2.1 builds and a v1-selection control now use the same current source, while the verified prior Drive evidence remains the historical baseline. The active file is profiles/v2_1.json; old profile files are removed from the branch but preserved in Git history.

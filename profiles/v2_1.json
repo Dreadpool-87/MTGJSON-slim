@@ -1,6 +1,6 @@
 {
-  "version": "1",
-  "description": "Identity, rules, legality and multilingual reference profile; no row or language filtering. Cosmetic, commercial, collation and product data are excluded explicitly.",
+  "version": "2.1",
+  "description": "Identity, Oracle rules and legality profile without cardForeignData. Preserve every card/token printing and language; omit the separate localized-card table. Cosmetic, commercial, collation and product data remain excluded explicitly.",
   "source_schema": [
     [
       "index",
@@ -258,7 +258,7 @@
       "table",
       "sets",
       "sets",
-      "CREATE TABLE \"sets\" (\"code\" TEXT, \"mtgoCode\" TEXT, \"name\" TEXT, \"block\" TEXT, \"releaseDate\" TEXT, \"type\" TEXT, \"isOnlineOnly\" BOOLEAN, \"isFoilOnly\" BOOLEAN, \"tcgplayerGroupId\" INTEGER, \"isNonFoilOnly\" BOOLEAN, \"parentCode\" TEXT, \"totalSetSize\" INTEGER, \"baseSetSize\" INTEGER, \"keyruneCode\" TEXT, \"isPartialPreview\" BOOLEAN, \"isForeignOnly\" BOOLEAN, \"isPaperOnly\" BOOLEAN, \"languages\" TEXT, \"tokenSetCode\" TEXT, \"mcmId\" INTEGER, \"mcmName\" TEXT, \"mcmIdExtras\" INTEGER)"
+      "CREATE TABLE \"sets\" (\"code\" TEXT, \"name\" TEXT, \"tokenSetCode\" TEXT, \"releaseDate\" TEXT, \"type\" TEXT, \"isOnlineOnly\" BOOLEAN, \"isFoilOnly\" BOOLEAN, \"isNonFoilOnly\" BOOLEAN, \"parentCode\" TEXT, \"totalSetSize\" INTEGER, \"baseSetSize\" INTEGER, \"keyruneCode\" TEXT, \"isPartialPreview\" BOOLEAN, \"isForeignOnly\" BOOLEAN, \"isPaperOnly\" BOOLEAN, \"languages\" TEXT, \"mtgoCode\" TEXT, \"tcgplayerGroupId\" INTEGER, \"block\" TEXT, \"mcmId\" INTEGER, \"mcmName\" TEXT, \"mcmIdExtras\" INTEGER)"
     ],
     [
       "table",
@@ -470,16 +470,6 @@
       "date",
       "text"
     ],
-    "cardForeignData": [
-      "uuid",
-      "faceName",
-      "identifiers",
-      "language",
-      "multiverseId",
-      "name",
-      "text",
-      "type"
-    ],
     "sets": [
       "code",
       "mtgoCode",
@@ -532,12 +522,6 @@
     ],
     [
       "cardRulings",
-      "uuid",
-      "cards",
-      "uuid"
-    ],
-    [
-      "cardForeignData",
       "uuid",
       "cards",
       "uuid"

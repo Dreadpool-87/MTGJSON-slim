@@ -169,7 +169,7 @@ class PackagingTests(unittest.TestCase):
 
 class OfficialProfileTests(unittest.TestCase):
     def test_tokens_use_documented_token_set_code(self):
-        p=json.loads((Path(slim.__file__).parent/'profiles/v2.json').read_text())
+        p=json.loads((Path(slim.__file__).parent/'profiles/v2_1.json').read_text())
         self.assertIn(['tokens','setCode','sets','tokenSetCode'],p['relationships'])
         self.assertNotIn(['tokens','setCode','sets','code'],p['relationships'])
 
@@ -254,8 +254,8 @@ class ProfileV2Tests(unittest.TestCase):
     setUp = PipelineTests.setUp
 
     def test_active_profile_omits_foreign_data_but_audits_upstream_schema(self):
-        p=json.loads((Path(slim.__file__).parent/'profiles/v2.json').read_text())
-        self.assertEqual(p['version'],'2')
+        p=json.loads((Path(slim.__file__).parent/'profiles/v2_1.json').read_text())
+        self.assertEqual(p['version'],'2.1')
         self.assertNotIn('cardForeignData',p['tables'])
         self.assertFalse(any('cardForeignData' in r for r in p['relationships']))
         self.assertTrue(any(row[0]=='table' and row[1]=='cardForeignData' for row in p['source_schema']))
