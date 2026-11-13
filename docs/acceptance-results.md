@@ -1,3 +1,5 @@
+> Previous profile v1 results, retained as the comparison baseline. Current v2 results will be recorded separately.
+
 # Local acceptance evidence — 2026-11-13
 
 The official MTGJSON source was verified and two complete local builds succeeded. The final local suite passes 17 tests, including deliberately corrupted inputs, unknown schema, invalid profiles, orphans, duplicate identities, forged reused output and report aliases (including hardlinks). See PR #1 checks for hosted fixture-test results. The full hosted data-preparation job has **not** been executed; it remains manual.

@@ -95,7 +95,7 @@ def check_profile(p):
                 for essential in ('uuid', 'printedName', 'facePrintedName'):
                     if essential in info and essential not in columns:
                         raise ValueError(f'profile must retain {table}.{essential}')
-                # v1 projects unconstrained upstream tables. Reject constraints instead of losing them.
+                # Versioned profiles project unconstrained upstream tables. Reject constraints instead of losing them.
                 source_sql = next(x[3] for x in rows if x[0] == 'table' and x[1] == table)
                 if any(x[3] or x[4] is not None or x[5] for x in info.values()) or c.execute(
                         f'PRAGMA foreign_key_list({quote(table)})').fetchall() or re.search(

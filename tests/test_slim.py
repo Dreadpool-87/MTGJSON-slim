@@ -169,7 +169,7 @@ class PackagingTests(unittest.TestCase):
 
 class OfficialProfileTests(unittest.TestCase):
     def test_tokens_use_documented_token_set_code(self):
-        p=json.loads((Path(slim.__file__).parent/'profiles/v1.json').read_text())
+        p=json.loads((Path(slim.__file__).parent/'profiles/v2.json').read_text())
         self.assertIn(['tokens','setCode','sets','tokenSetCode'],p['relationships'])
         self.assertNotIn(['tokens','setCode','sets','code'],p['relationships'])
 
@@ -249,3 +249,55 @@ class ReportAliasTests(unittest.TestCase):
             capture_output=True,text=True)
         self.assertNotEqual(result.returncode,0)
         self.assertEqual(self.archive.read_bytes(),before)
+
+class ProfileV2Tests(unittest.TestCase):
+    setUp = PipelineTests.setUp
+
+    def test_active_profile_omits_foreign_data_but_audits_upstream_schema(self):
+        p=json.loads((Path(slim.__file__).parent/'profiles/v2.json').read_text())
+        self.assertEqual(p['version'],'2')
+        self.assertNotIn('cardForeignData',p['tables'])
+        self.assertFalse(any('cardForeignData' in r for r in p['relationships']))
+        self.assertTrue(any(row[0]=='table' and row[1]=='cardForeignData' for row in p['source_schema']))
+        schema=slim.output_schema(p)
+        self.assertFalse(any(row[2]=='cardForeignData' for row in schema))
+        self.assertEqual(len([r for r in schema if r[0]=='table']),8)
+        for essential in ['uuid','name','text','printedName','facePrintedName','otherFaceIds','language']:
+            self.assertIn(essential,p['tables']['cards'])
+
+    def add_foreign_source_table(self):
+        with sqlite3.connect(self.db) as c:
+            c.executescript('CREATE TABLE cardForeignData (uuid TEXT, language TEXT, name TEXT);'
+                'CREATE INDEX idx_foreign_uuid ON cardForeignData(uuid);')
+            c.execute("INSERT INTO cardForeignData VALUES ('a','French','Feu')")
+        self.profile['source_schema']=slim.schema(self.db)
+
+    def test_foreign_table_and_index_absent_from_generated_sqlite(self):
+        self.add_foreign_source_table()
+        out=self.root/'v2.sqlite';slim.convert(self.db,out,self.profile)
+        slim.validate(out,self.profile,source=self.db)
+        with sqlite3.connect(out) as c:
+            self.assertEqual(c.execute("SELECT count(*) FROM sqlite_schema WHERE tbl_name='cardForeignData'").fetchone()[0],0)
+            self.assertEqual(c.execute('SELECT uuid,printedName,facePrintedName,language FROM cards ORDER BY uuid').fetchall(),
+                [('a','Feu // Glace','Feu','French'),('b','Feu // Glace','Glace','French')])
+
+    def test_drift_in_omitted_foreign_source_table_still_fails(self):
+        self.add_foreign_source_table()
+        with sqlite3.connect(self.db) as c:c.execute('ALTER TABLE cardForeignData ADD COLUMN newField TEXT')
+        with self.assertRaisesRegex(ValueError,'schema'):
+            slim.convert(self.db,self.root/'v2.sqlite',self.profile)
+        self.assertFalse((self.root/'v2.sqlite').exists())
+
+    def test_nonenglish_complex_faces_keep_oracle_text_and_printing_ids(self):
+        with sqlite3.connect(self.db) as c:
+            for name in ['layout','otherFaceIds','side','text']:
+                c.execute(f'ALTER TABLE cards ADD COLUMN {name} TEXT')
+            c.execute("UPDATE cards SET layout='transform',otherFaceIds='b',side='a',text='Draw a card.' WHERE uuid='a'")
+            c.execute("UPDATE cards SET layout='transform',otherFaceIds='a',side='b',text='Flying' WHERE uuid='b'")
+        self.profile['tables']['cards']+=['layout','otherFaceIds','side','text']
+        self.profile['source_schema']=slim.schema(self.db)
+        out=self.root/'v2.sqlite';slim.convert(self.db,out,self.profile)
+        with sqlite3.connect(out) as c:
+            self.assertEqual(c.execute('SELECT uuid,language,layout,otherFaceIds,side,text FROM cards ORDER BY uuid').fetchall(),
+                [('a','French','transform','b','a','Draw a card.'),('b','French','transform','a','b','Flying')])
+            self.assertEqual(c.execute('SELECT * FROM cardIdentifiers ORDER BY uuid').fetchall(),[('a','1'),('b','2')])

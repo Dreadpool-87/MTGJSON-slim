@@ -1,3 +1,5 @@
+> Historical profile v1 reference. The active profile is v2; see [language-policy-v2.md](language-policy-v2.md).
+
 # Profile v1: complete schema projection
 
 This policy is explicit and versioned. Source DDL is pinned in `profiles/v1.json`; all selected-table rows are preserved, with no language filter. Data model reference: https://mtgjson.com/data-models/. A column keeps its upstream SQLite type and serialized value. No name or face normalization is performed.
