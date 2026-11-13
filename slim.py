@@ -351,7 +351,9 @@ def main():
                  ['archive', 'profile', 'database', 'source'] if getattr(args, name, None)]
     output_root = Path(args.output_dir).resolve() if args.command == 'build' else None
     download_root = Path(args.directory).resolve() if args.command == 'download' else None
-    if (report_path in protected or
+    aliases_input = report_path.exists() and any(
+        path.exists() and os.path.samefile(report_path, path) for path in protected)
+    if (report_path in protected or aliases_input or
             (output_root and report_path.is_relative_to(output_root)) or
             (download_root and report_path.is_relative_to(download_root))):
         print(json.dumps({'status': 'FAIL', 'error': 'report path overlaps protected input/output'}))

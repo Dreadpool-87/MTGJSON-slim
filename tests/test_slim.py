@@ -236,3 +236,16 @@ class DownloadTests(unittest.TestCase):
         Path(self.root/'download'/'AllPrintings.sqlite.xz').write_bytes(b'tampered')
         with self.assertRaisesRegex(ValueError,'checksum'):
             slim.download(self.root/'download')
+
+class ReportAliasTests(unittest.TestCase):
+    setUp = PipelineTests.setUp
+
+    def test_report_hardlink_cannot_overwrite_verified_archive(self):
+        report=self.root/'aliased-report.json';report.hardlink_to(self.archive)
+        before=self.archive.read_bytes()
+        result=subprocess.run([sys.executable,str(Path(slim.__file__)),'build',
+            '--archive',str(self.archive),'--sha256',self.digest,'--profile',str(self.profile_path),
+            '--output-dir',str(self.root/'package'),'--tool-commit','a'*40,'--report',str(report)],
+            capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(self.archive.read_bytes(),before)

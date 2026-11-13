@@ -9,10 +9,10 @@ Constraints: English public content; one existing development branch/PR; main un
 
 ## Tasks
 
-- [ ] Inventory official SQLite schema, indexes, foreign keys, counts, version and multi-face records; check checksum and tampered archive.
-- [ ] Write failing unittest cases for schema changes, corrupt input, invalid profiles, orphan relations, checksum mismatch, positive conversion and repeatability. Implement verification, inventory, conversion and validation in `slim.py`, with `profiles/v1.json`.
-- [ ] Add manual workflow with read-only permissions, concurrency and no publishing. Add provenance and version-specific packaging, unchanged detection and positive/negative tests.
-- [ ] Execute full real-data conversion twice, validate outputs, compare historical reference if accessible, measure resources. Review all changes and run full suite.
+- [x] Inventory official SQLite schema, indexes, foreign keys, counts, version and multi-face records; check checksum and tampered archive.
+- [x] Write failing unittest cases for schema changes, corrupt input, invalid profiles, orphan relations, checksum mismatch, positive conversion and repeatability. Implement verification, inventory, conversion and validation in `slim.py`, with `profiles/v1.json`.
+- [x] Add manual workflow with read-only permissions, concurrency and no publishing. Add provenance and version-specific packaging, unchanged detection and positive/negative tests.
+- [x] Execute full real-data conversion twice, validate outputs, compare historical reference if accessible, measure resources. Review all changes and run full suite.
 - [ ] Update existing PR #1, verify remote commit/main/releases/CI, and save Dutch report plus complete evidence in Drive.
 
 ## Review focus
