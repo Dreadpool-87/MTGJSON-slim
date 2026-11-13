@@ -23,8 +23,7 @@ jobs:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
   real-data:
-    # Temporary PR-branch acceptance: permit one hosted full-data build without changing main.
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'docs/initial-project-foundation')
+    if: github.event_name == 'workflow_dispatch'
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
