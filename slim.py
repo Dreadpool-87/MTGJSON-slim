@@ -17,6 +17,7 @@ import time
 import urllib.request
 
 UPSTREAM = 'https://mtgjson.com/api/v5/AllPrintings.sqlite.xz'
+USER_AGENT = 'MTGJSON-slim/1 (+https://github.com/Dreadpool-87/MTGJSON-slim)'
 
 
 def quote(name):
@@ -294,12 +295,20 @@ def build(archive, expected, profile_path, output_dir, tool_commit):
             'peak_rss_kib': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
 
 
-def download(destination):
+def download(destination, previous_sha256=None):
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
-    checksum = urllib.request.urlopen(UPSTREAM + '.sha256', timeout=60).read().decode().strip()
+    request = urllib.request.Request(UPSTREAM + '.sha256', headers={'User-Agent': USER_AGENT})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        checksum = response.read(1024).decode().strip()
     if not re.fullmatch(r'[0-9a-fA-F]{64}', checksum):
         raise ValueError('invalid official checksum response')
+    if previous_sha256:
+        if not re.fullmatch(r'[0-9a-fA-F]{64}', previous_sha256):
+            raise ValueError('invalid previous upstream SHA-256')
+        if checksum.lower() == previous_sha256.lower():
+            return {'status': 'UNCHANGED', 'url': UPSTREAM, 'sha256': checksum.lower(),
+                    'note': 'Official upstream digest unchanged; no dataset downloaded or validated in this check'}
     archive = destination / 'AllPrintings.sqlite.xz'
     if archive.exists():
         verify(archive, checksum)
@@ -307,7 +316,8 @@ def download(destination):
         with tempfile.NamedTemporaryFile(dir=destination, delete=False) as f:
             partial = Path(f.name)
         try:
-            with urllib.request.urlopen(UPSTREAM, timeout=120) as src, partial.open('wb') as dst:
+            with urllib.request.urlopen(urllib.request.Request(UPSTREAM, headers={'User-Agent': USER_AGENT}),
+                                        timeout=120) as src, partial.open('wb') as dst:
                 shutil.copyfileobj(src, dst, 1024 * 1024)
             verify(partial, checksum)
             os.rename(partial, archive)
@@ -322,6 +332,7 @@ def main():
     subs = parser.add_subparsers(dest='command', required=True)
     dl = subs.add_parser('download')
     dl.add_argument('--directory', required=True)
+    dl.add_argument('--previous-sha256', help='Optional prior upstream digest: skip download if unchanged')
     inv = subs.add_parser('inventory')
     inv.add_argument('--database', required=True)
     ver = subs.add_parser('validate')
@@ -347,7 +358,7 @@ def main():
         return 1
     try:
         if args.command == 'download':
-            result = download(args.directory)
+            result = download(args.directory, args.previous_sha256)
         elif args.command == 'inventory':
             result = inventory(args.database)
             result['status'] = 'PASS' if result['integrity_check'] == ['ok'] else 'FAIL'

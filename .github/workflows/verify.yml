@@ -1,6 +1,11 @@
 name: Verify MTGJSON slim
 on:
   workflow_dispatch:
+    inputs:
+      previous_upstream_sha256:
+        description: Optional digest from a previous successful manifest; skip unchanged upstream
+        required: false
+        type: string
   pull_request:
 permissions:
   contents: read
@@ -28,8 +33,15 @@ jobs:
         with:
           python-version: '3.12'
       - name: Download and verify official SQLite archive
-        run: python slim.py download --directory downloads --report evidence/download.json
+        id: download
+        env:
+          PREVIOUS_SHA256: ${{ inputs.previous_upstream_sha256 }}
+        run: |
+          python slim.py download --directory downloads --report evidence/download.json \
+            --previous-sha256 "$PREVIOUS_SHA256"
+          python -c "import json,os; r=json.load(open('evidence/download.json')); print('changed=' + str(r['status'] != 'UNCHANGED').lower(), file=open(os.environ['GITHUB_OUTPUT'],'a'))"
       - name: Prepare and validate without publishing datasets
+        if: steps.download.outputs.changed == 'true'
         shell: bash
         run: |
           python slim.py build --archive downloads/AllPrintings.sqlite.xz \

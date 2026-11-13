@@ -200,3 +200,39 @@ class ReviewRegressionTests(unittest.TestCase):
             self.assertNotEqual(result.returncode,0)
             self.assertEqual(self.archive.read_bytes(),before)
             self.assertEqual(self.profile_path.read_bytes(),profile_before)
+
+class DownloadTests(unittest.TestCase):
+    setUp = PipelineTests.setUp
+
+    def test_real_http_download_named_agent_tamper_and_unchanged(self):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        import threading
+        archive_bytes=self.archive.read_bytes()
+        requests=[]
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self,*args):pass
+            def do_GET(self):
+                requests.append((self.path,self.headers.get('User-Agent')))
+                if not self.headers.get('User-Agent','').startswith('MTGJSON-slim/'):
+                    self.send_response(403);self.end_headers();return
+                self.send_response(200);self.end_headers()
+                self.wfile.write(hashlib.sha256(archive_bytes).hexdigest().encode()
+                    if self.path.endswith('.sha256') else archive_bytes)
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        self.addCleanup(server.server_close);self.addCleanup(server.shutdown)
+        original=slim.UPSTREAM
+        slim.UPSTREAM=f'http://127.0.0.1:{server.server_port}/source.xz'
+        self.addCleanup(setattr,slim,'UPSTREAM',original)
+        result=slim.download(self.root/'download')
+        self.assertEqual(result['status'],'PASS')
+        self.assertEqual(Path(result['archive']).read_bytes(),archive_bytes)
+        requests.clear()
+        result=slim.download(self.root/'unchanged',previous_sha256=self.digest)
+        self.assertEqual(result['status'],'UNCHANGED')
+        self.assertEqual(len(requests),1)
+        self.assertTrue(requests[0][0].endswith('.sha256'))
+        self.assertFalse((self.root/'unchanged'/'AllPrintings.sqlite.xz').exists())
+        Path(self.root/'download'/'AllPrintings.sqlite.xz').write_bytes(b'tampered')
+        with self.assertRaisesRegex(ValueError,'checksum'):
+            slim.download(self.root/'download')

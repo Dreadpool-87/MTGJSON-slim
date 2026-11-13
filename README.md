@@ -26,7 +26,7 @@ python slim.py build \
 
 Outputs include a version-specific `.sqlite`, `.sqlite.xz`, archive SHA-256 sidecar, provenance manifest, validation report and full upstream schema/count inventory. The build verifies the archive **before** decompression, prepares in a temporary directory, and exposes the package only after validation and compression succeed. Reports must live outside the package and must not alias inputs.
 
-Repeat the same command to detect unchanged upstream/profile/tool inputs. Existing packages are rechecked against the verified source projection and their compressed/database bytes before returning `UNCHANGED`. A changed input/profile/tool requires a new output directory. Nothing is silently overwritten.
+For a checksum-only upstream check, use `download --previous-sha256 <prior-official-digest>` with the other download arguments; `UNCHANGED` skips the archive download. Repeat the same build command to detect unchanged upstream/profile/tool inputs in an existing package. Existing packages are rechecked against the verified source projection and their compressed/database bytes before returning `UNCHANGED`. A changed input/profile/tool requires a new output directory. Nothing is silently overwritten.
 
 For independent validation, find the version-specific output filename in `output/manifest.json`:
 
@@ -64,7 +64,7 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 ## Automation and troubleshooting
 
-The workflow runs fixture tests on PR updates. Real-data preparation is **manual only** (`workflow_dispatch`), with read-only repository permissions, per-ref concurrency and a timeout. Only JSON evidence is uploaded as an Actions artifact. There is no schedule, Release action, dataset upload or repository write permission. Reusing the local output directory detects unchanged inputs; separate hosted runs have fresh disks and currently rebuild rather than persisting database caches.
+The workflow runs fixture tests on PR updates. Real-data preparation is **manual only** (`workflow_dispatch`), with read-only repository permissions, per-ref concurrency and a timeout. Only JSON evidence is uploaded as an Actions artifact. There is no schedule, Release action, dataset upload or repository write permission. An optional manual input `previous_upstream_sha256` (from a previously successful manifest) compares the current official checksum and skips the download/build when unchanged. This is an upstream-change check, not revalidation of a prior dataset. Omit it when testing a new profile or tool version. Without that input, hosted runs rebuild on their fresh disks; local package reuse performs full revalidation.
 
 - Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
 - Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
