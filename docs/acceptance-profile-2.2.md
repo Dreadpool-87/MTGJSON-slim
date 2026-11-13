@@ -81,3 +81,15 @@ This section **updates the original NOT EXECUTED limitation above**; it does not
 
 **Decision:** hosted runner capability and full-data build/validation are verified. This is **not** authorization to merge or publish data. Before any public Release, complete a separate redistribution and legal-notice review. Weekly scheduling is not implemented; consumers of this database are outside this repository's acceptance scope.
 
+
+
+## Documentation double-review (13 November 2026, PR branch)
+
+Two separate checks were completed **after** documenting the exact selection:
+
+1. **Profile-to-document reconciliation.** Independently enumerated the actual `profiles/v2_2.json` source-schema tables and output columns; checked every listed retained column in every retained table, all 12 excluded table names, the six omitted `cards`/`tokens` columns and the 20 named indexes against `PROFILE_2_2_DATA_INVENTORY.md`. Result: **PASS**, no omissions or misclassifications. This is a documentation consistency check, not a new full converter build.
+2. **Actual database and hosted evidence reconciliation.** Reopened the locally verified 282,390,528-byte SQLite with SHA-256 `9c9f6adfda843d095e0e3c79deb637feb22d8611921df018922571ec8bf8cc18`; independently checked its eight actual table names, 20 actual index names, `PRAGMA quick_check=ok`, and every output table row count against the saved hosted `output/source-inventory.json` and `output/validation.json`. Result: **PASS**. The hosted source inventory has 20 source tables and reports **652,367 rows in retained tables** and **933,587 rows in omitted tables** (counts of table rows, **not distinct cards**). The exact 20 per-table source row counts are in the inventory documentation.
+
+**Brand/license cross-check, twice:** checked the current official [MTGJSON Brand Assets](https://mtgjson.com/brand-assets/) and [MTGJSON License](https://mtgjson.com/license/) pages; independently compared the upstream project's [MIT license text](https://github.com/mtgjson/mtgjson/blob/master/LICENSE.txt) and Wizards' [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) with the project's [third-party notice](../THIRD_PARTY_NOTICES.md). The policy distinguishes voluntary text attribution from strict no-alteration/no-endorsement of MTGJSON brand assets. **No logo was added.** Separate third-party rights/distribution clearance remains **NOT DONE**; reviewing public policies is not itself a legal clearance.
+
+This documentation-only follow-up does not change profile bytes, converter code or the official 13 November source. Automated weekly updates and dataset publication remain intentionally disabled.
