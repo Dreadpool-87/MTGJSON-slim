@@ -2,7 +2,7 @@
 
 **Local acceptance: GO.** All 191 verified 07Nov fields are retained, including 14 restored fields; all 2.1 data remains intact. The output has eight tables, 227 fields and 20 explicit indexes. cardForeignData remains absent. No consumer repository, main branch or Release is changed.
 
-Tool commit: `a0bf438f790f88471554928f5ba96f9a98c787d2`. The full local fixture suite passes 33 tests. Actual initial CI run: https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43510051664 (33 tests, success). Full hosted data build is NOT EXECUTED; manual dispatch requires a workflow on the default branch, which remains untouched.
+Tool commit: `a0bf438f790f88471554928f5ba96f9a98c787d2`. The full local fixture suite passes 33 tests. Actual initial CI run: https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43510051664 (33 tests, success). At the time of this local report, the full hosted data build was NOT EXECUTED. It was **subsequently executed successfully** on the same PR branch; see the separately documented GitHub-hosted follow-up below. The normal workflow remains manual-only, and main was not changed.
 
 ## Evidence of information preservation
 
@@ -62,3 +62,22 @@ Large gains in exact Scryfall/Oracle/printed-name/collector routes are supported
 All ten historical index routes/names are retained. Six ordinary+UNIQUE duplicate key groups from 2.1 are removed. Scryfall IDs are non-unique in actual multi-face data, so their indexes are non-unique; UUID/code invariants are explicitly UNIQUE. Card setCode and setCode+number overlap intentionally for different measured queries; there are no duplicate exact keys. Missing dbstat capability reports null/error, never zero bytes.
 
 The field/index gapmatrix, plans for every sample, timing arrays, counts, footprints, negative tests, source/value comparisons and exact commands are delivered in the new compact Drive evidence package. Previous evidence/source snapshots remain unchanged; no duplicate full source archive is created.
+
+
+## Subsequent independent GitHub-hosted full-data acceptance (13 November 2026)
+
+This section **updates the original NOT EXECUTED limitation above**; it does not retroactively change the frozen local test run.
+
+- GitHub Actions [full-data run 43516913604](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604): `tests=success`, `real-data=success`. A narrowly scoped, temporary PR-branch condition permitted the complete real-data job to run **without** adding the workflow to `main`. It was subsequently reverted to manual-only on the existing PR branch.
+- [Follow-up workflow verification 43517444042](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43517444042): success after reverting the temporary condition; no Release, schedule or publishing job was enabled.
+- The GitHub job downloaded the official `AllPrintings.sqlite.xz` and checked source SHA-256 `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e` before building. It used `profiles/v2_2.json` with SHA-256 `2f3755454c6626a9e35b6ee0289ed394b86b2cc22b208ac171d11b0a59cb11fc`.
+- Hosted `slim.py build` returned `status=PASS` after complete source projection / output validation, `SQLite integrity_check=ok`, schema/identity and relationship checks. The job took approximately 169 seconds for the converter step and reported peak RSS 143,232 KiB.
+- Hosted Linux runtime: Python 3.12.16; SQLite 3.45.1. Previously documented local runtime: Python 3.12.14; SQLite 3.53.1.
+- Hosted SQLite: 282,390,528 bytes, SHA-256 `c0bd615eeb6dad88b884ce2d52667503fe099d535ac3d62b794b9016bade4dfc`.
+- Hosted XZ: 49,264,112 bytes, SHA-256 `3891bdc3f441c069911e9c0876cd4b5f0b75906f83ffcee39c6e5b3a5ba52435`.
+- These **are not** the local raw/XZ SHA-256 values, despite the same official source digest and profile. Different SQLite/runtime versions were used. The preserved validation evidence compares the full selected-table logical digests and confirms no selected-row content changes; cross-runtime byte-identity is **not asserted**.
+- The [GitHub Actions report ZIP was saved to the designated Drive Test Results folder](https://drive.google.com/file/d/1TsaBRve9Kt0YgVIZBVtB5NJfqmSVMtvq/view). The GitHub-hosted CI artifact has time-limited retention, so the Drive copy matters.
+- New [exact kept/removed data and index inventory](PROFILE_2_2_DATA_INVENTORY.md) is explicitly tied to the reviewed v2.2 profile. For branding and IP review, see [third-party notices](../THIRD_PARTY_NOTICES.md).
+
+**Decision:** hosted runner capability and full-data build/validation are verified. This is **not** authorization to merge or publish data. Before any public Release, complete a separate redistribution and legal-notice review. Weekly scheduling is not implemented; consumers of this database are outside this repository's acceptance scope.
+
