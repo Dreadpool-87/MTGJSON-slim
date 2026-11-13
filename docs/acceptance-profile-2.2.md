@@ -1,95 +1,57 @@
-# Profile 2.2 information and index acceptance — 2026-11-13
+# MTGJSON-slim — current profile 2.2 acceptance
 
-**Local acceptance: GO.** All 191 verified 07Nov fields are retained, including 14 restored fields; all 2.1 data remains intact. The output has eight tables, 227 fields and 20 explicit indexes. cardForeignData remains absent. No consumer repository, main branch or Release is changed.
+**Status: technical acceptance PASS on the verified MTGJSON `5.3.0+20261113` source.** No dataset Release, scheduled updater or public distribution is enabled. This report documents the current converter/output and its limitations, not comparisons with other slim databases.
 
-Tool commit: `a0bf438f790f88471554928f5ba96f9a98c787d2`. The full local fixture suite passes 33 tests. Actual initial CI run: https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43510051664 (33 tests, success). At the time of this local report, the full hosted data build was NOT EXECUTED. It was **subsequently executed successfully** on the same PR branch; see the separately documented GitHub-hosted follow-up below. The normal workflow remains manual-only, and main was not changed.
+## Verified output
 
-## Evidence of information preservation
+- Profile: [`profiles/v2_2.json`](../profiles/v2_2.json), SHA-256 `2f3755454c6626a9e35b6ee0289ed394b86b2cc22b208ac171d11b0a59cb11fc`.
+- Input: official MTGJSON `AllPrintings.sqlite.xz`, SHA-256 `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e`.
+- Output: **8 tables, 227 retained columns, 20 explicit indexes**, with no `cardForeignData` or `setTranslations` table.
+- All rows and NULLs in the selected tables/columns match the verified official source. No language or card-layout filtering, card-face merging or invented translation.
+- Verified SQLite integrity, unique UUID/set-code identity constraints, configured source relationships and **10,938 card-face links**. Named, printed and original text remain distinct; all sampled complex layouts, printing identities and token facts were checked.
+- Exact table/field/index selection and 20-table source row-count inventory: [current data inventory](PROFILE_2_2_DATA_INVENTORY.md).
 
-- Verified actual 07Nov archive bytes and schema/indexes, including the non-unique `idx_cardIdentifiers_oracleid`. All historical UUIDs/set codes still exist in the new output.
-- Source and output historical-field projections, all prior-2.1 field projections, NULL counts, exact language/layout distributions and twelve complex-layout/token examples match. All 10,938 face edges resolve.
-- Two full builds use the same verified 13Nov archive, profile, tool commit and runtime. SQLite, XZ and manifests are identical; direct cmp and SHA-256 checks passed.
-- Historical INT/NUM declarations and current INTEGER/BOOLEAN/DATE declarations have equivalent SQLite affinities. Source values are copied exactly; no rule/text/boolean/date reconstruction is performed. Cross-snapshot updates and list ordering differences are explicitly separated from conversion loss.
+## Executed tests and complete builds
 
-## Measured sizes
+- **33 regression/fixture tests passed** locally and on GitHub.
+- Two full **local builds** with identical source, profile, tool commit and runtime reproduced byte-for-byte matching output SQLite, XZ and deterministic manifests.
+- Independent full-data [GitHub Actions run 43516913604](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) completed with `tests=success`, `real-data=success`: official archive download/checksum, full SQLite conversion and validation succeeded.
+- The temporary PR-only hosted-build trigger was restored to **manual-only** after this acceptance run. [Subsequent CI 43517444042](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43517444042) passed following that restoration.
+- Validation evidence is preserved in the [designated Drive folder](https://drive.google.com/file/d/1TsaBRve9Kt0YgVIZBVtB5NJfqmSVMtvq/view). This is necessary because GitHub Actions artifacts have limited retention.
 
-| Artifact | Historical 07Nov | Profile 2.1 | Profile 2.2 |
-| --- | ---: | ---: | ---: |
-| SQLite bytes | 227905536 | 261873664 | 282390528 |
-| XZ bytes | 45020048 | 39117432 | 49212160 |
+| Output artifact | Local bytes | Local SHA-256 | GitHub-hosted bytes | GitHub-hosted SHA-256 |
+| --- | ---: | --- | ---: | --- |
+| SQLite | 282,390,528 | `9c9f6adfda843d095e0e3c79deb637feb22d8611921df018922571ec8bf8cc18` | 282,390,528 | `c0bd615eeb6dad88b884ce2d52667503fe099d535ac3d62b794b9016bade4dfc` |
+| XZ | 49,212,160 | `5e9cc09d7ece7e30e5e52549bf78559b27eee7800551d7bef9d9cd8a95edf4d2` | 49,264,112 | `3891bdc3f441c069911e9c0876cd4b5f0b75906f83ffcee39c6e5b3a5ba52435` |
 
-- SQLite SHA-256: `9c9f6adfda843d095e0e3c79deb637feb22d8611921df018922571ec8bf8cc18`
-- XZ SHA-256: `5e9cc09d7ece7e30e5e52549bf78559b27eee7800551d7bef9d9cd8a95edf4d2`
-- Source XZ SHA-256: `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e`
+The local and GitHub **raw hashes are not identical** because their runtimes differ (local Python 3.12.14/SQLite 3.53.1, hosted Python 3.12.16/SQLite 3.45.1). The full projected-table **logical hashes and row counts matched**. Byte-for-byte reproducibility is established only within the same pinned runtime, not across different runtimes.
 
-## Query measurements
+Hosted converter elapsed time: approximately **169 seconds**; peak RSS: **143,232 KiB**.
 
-Twenty-one deterministic sampled workloads were run with five repeated warm-cache batches and complete result retrieval. The same parameters were used on actual 07Nov, 2.1, 2.2 and a same-data 2.2 copy carrying the 2.1 index set. Every current-source result digest is identical. Different historical snapshots are context, not isolated causal performance comparisons.
+## Query and index verification
 
-| Workload | 2.1 us | 2.2 us | Same-data old-index us |
-| --- | ---: | ---: | ---: |
-| csv_name_set_number | 600.93 | 5.15 | 970.56 |
-| scryfall_printing | 8957.93 | 7.58 | 10397.86 |
-| oracle_printings | 9481.10 | 45.02 | 10203.39 |
-| legality_ruling_join | 9.39 | 9.25 | 10.64 |
-| name | 6.39 | 6.13 | 6.27 |
-| printed_name | 134419.97 | 5.27 | 24184.90 |
-| face_printed_name | 133189.54 | 5.23 | 23979.00 |
-| set_number | 325.14 | 5.05 | 559.33 |
-| set_only | 97.23 | 119.40 | 101.47 |
-| token_printing | 3043.29 | 7.17 | 3068.24 |
-| token_oracle | 591.82 | 7.02 | 627.58 |
-| token_name | 5.22 | 5.17 | 5.42 |
-| token_set_number | 23.66 | 5.12 | 69.96 |
-| set_token_code | 60.70 | 4.60 | 65.43 |
-| set_name | 4.48 | 4.57 | 4.57 |
-| face_lookup | 5.37 | 5.54 | 8.13 |
-| any_exact_name | 140344.25 | 6.19 | 28780.50 |
-| token_set_only | 16.40 | 20.59 | 14.50 |
-| missing_scryfall | 9065.06 | 3.88 | 9196.19 |
-| missing_oracle | 9133.94 | 3.91 | 9000.98 |
-| missing_csv | 4.16 | 4.16 | 3.92 |
+The 20 verified indexes include **UNIQUE** UUID/code identity indexes and **non-unique** Scryfall and Oracle ID indexes for printing/face records that can share an external ID. The exact names, columns, uniqueness and intended use are enumerated in [the data inventory](PROFILE_2_2_DATA_INVENTORY.md).
 
-Large gains in exact Scryfall/Oracle/printed-name/collector routes are supported by plans moving from scans to searches. This is not a promise that every query gets faster. Card set-only and token set-only were slower in the main run; alternating sensitivity runs retained a smaller card difference and a measurable token difference. Correctness/result digests remain identical. The policy favors the measured identity/collector routes, retains every historical index route, and documents the tradeoffs.
+A set of **21 deterministic SQL workloads** was measured using five warm-cache batches each, complete result retrieval, saved parameters, query plans and result digests. Selected current-profile median batch means (microseconds per lookup):
 
-| Dataset | Indexes | Index bytes | Duplicate exact-key groups |
-| --- | ---: | ---: | ---: |
-| historical_07Nov | 10 | 38981632 | 0 |
-| profile_2_1 | 18 | 51007488 | 6 |
-| profile_2_2 | 20 | 49741824 | 0 |
-| same_data_old_indexes | 18 | 51064832 | 6 |
+| Query | Profile 2.2 (µs) |
+| --- | ---: |
+| CSV name/set/collector number | 5.15 |
+| Scryfall printing ID | 7.58 |
+| Scryfall Oracle ID printings | 45.02 |
+| Printed card name | 5.27 |
+| Token printing ID | 7.17 |
+| Card set code only | 119.40 |
+| Token set code only | 20.59 |
 
-All ten historical index routes/names are retained. Six ordinary+UNIQUE duplicate key groups from 2.1 are removed. Scryfall IDs are non-unique in actual multi-face data, so their indexes are non-unique; UUID/code invariants are explicitly UNIQUE. Card setCode and setCode+number overlap intentionally for different measured queries; there are no duplicate exact keys. Missing dbstat capability reports null/error, never zero bytes.
+These are **sampled warmed-cache results**, not universal performance guarantees, cold-cache tests or complete game-rules validation. Some set-only lookup patterns remain relatively slow. An index does not automatically optimize every query.
 
-The field/index gapmatrix, plans for every sample, timing arrays, counts, footprints, negative tests, source/value comparisons and exact commands are delivered in the new compact Drive evidence package. Previous evidence/source snapshots remain unchanged; no duplicate full source archive is created.
+## Independent review and maintenance boundaries
 
+- A first documentation pass enumerated all source/output tables, selected columns, omitted tables/columns and index definitions directly from the committed profile.
+- A second pass checked the published inventory against every profile entry, and compared actual SQLite structure/integrity and source/selected-table counts against the preserved hosted evidence. **Both checks passed**.
+- The project uses [MTGJSON branding rules](https://mtgjson.com/brand-assets/), [MTGJSON license terms](https://mtgjson.com/license/) and [Wizards Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) as distinct inputs to its [third-party notices](../THIRD_PARTY_NOTICES.md). Only text credit, no downloaded logo. **Legal clearance to publish a full derived database has not been established.**
+- The profile pins a specific upstream schema. Schema drift, including changes in omitted source tables, **stops the build for review**. Automatic weekly scheduling, database Releases and consumer integrations require separate decisions and implementation.
+- Successful source conversion is **not** proof that every downstream application's size limits, checksum pins or runtime constraints accept this database.
 
-## Subsequent independent GitHub-hosted full-data acceptance (13 November 2026)
-
-This section **updates the original NOT EXECUTED limitation above**; it does not retroactively change the frozen local test run.
-
-- GitHub Actions [full-data run 43516913604](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604): `tests=success`, `real-data=success`. A narrowly scoped, temporary PR-branch condition permitted the complete real-data job to run **without** adding the workflow to `main`. It was subsequently reverted to manual-only on the existing PR branch.
-- [Follow-up workflow verification 43517444042](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43517444042): success after reverting the temporary condition; no Release, schedule or publishing job was enabled.
-- The GitHub job downloaded the official `AllPrintings.sqlite.xz` and checked source SHA-256 `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e` before building. It used `profiles/v2_2.json` with SHA-256 `2f3755454c6626a9e35b6ee0289ed394b86b2cc22b208ac171d11b0a59cb11fc`.
-- Hosted `slim.py build` returned `status=PASS` after complete source projection / output validation, `SQLite integrity_check=ok`, schema/identity and relationship checks. The job took approximately 169 seconds for the converter step and reported peak RSS 143,232 KiB.
-- Hosted Linux runtime: Python 3.12.16; SQLite 3.45.1. Previously documented local runtime: Python 3.12.14; SQLite 3.53.1.
-- Hosted SQLite: 282,390,528 bytes, SHA-256 `c0bd615eeb6dad88b884ce2d52667503fe099d535ac3d62b794b9016bade4dfc`.
-- Hosted XZ: 49,264,112 bytes, SHA-256 `3891bdc3f441c069911e9c0876cd4b5f0b75906f83ffcee39c6e5b3a5ba52435`.
-- These **are not** the local raw/XZ SHA-256 values, despite the same official source digest and profile. Different SQLite/runtime versions were used. The preserved validation evidence compares the full selected-table logical digests and confirms no selected-row content changes; cross-runtime byte-identity is **not asserted**.
-- The [GitHub Actions report ZIP was saved to the designated Drive Test Results folder](https://drive.google.com/file/d/1TsaBRve9Kt0YgVIZBVtB5NJfqmSVMtvq/view). The GitHub-hosted CI artifact has time-limited retention, so the Drive copy matters.
-- New [exact kept/removed data and index inventory](PROFILE_2_2_DATA_INVENTORY.md) is explicitly tied to the reviewed v2.2 profile. For branding and IP review, see [third-party notices](../THIRD_PARTY_NOTICES.md).
-
-**Decision:** hosted runner capability and full-data build/validation are verified. This is **not** authorization to merge or publish data. Before any public Release, complete a separate redistribution and legal-notice review. Weekly scheduling is not implemented; consumers of this database are outside this repository's acceptance scope.
-
-
-
-## Documentation double-review (13 November 2026, PR branch)
-
-Two separate checks were completed **after** documenting the exact selection:
-
-1. **Profile-to-document reconciliation.** Independently enumerated the actual `profiles/v2_2.json` source-schema tables and output columns; checked every listed retained column in every retained table, all 12 excluded table names, the six omitted `cards`/`tokens` columns and the 20 named indexes against `PROFILE_2_2_DATA_INVENTORY.md`. Result: **PASS**, no omissions or misclassifications. This is a documentation consistency check, not a new full converter build.
-2. **Actual database and hosted evidence reconciliation.** Reopened the locally verified 282,390,528-byte SQLite with SHA-256 `9c9f6adfda843d095e0e3c79deb637feb22d8611921df018922571ec8bf8cc18`; independently checked its eight actual table names, 20 actual index names, `PRAGMA quick_check=ok`, and every output table row count against the saved hosted `output/source-inventory.json` and `output/validation.json`. Result: **PASS**. The hosted source inventory has 20 source tables and reports **652,367 rows in retained tables** and **933,587 rows in omitted tables** (counts of table rows, **not distinct cards**). The exact 20 per-table source row counts are in the inventory documentation.
-
-**Brand/license cross-check, twice:** checked the current official [MTGJSON Brand Assets](https://mtgjson.com/brand-assets/) and [MTGJSON License](https://mtgjson.com/license/) pages; independently compared the upstream project's [MIT license text](https://github.com/mtgjson/mtgjson/blob/master/LICENSE.txt) and Wizards' [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) with the project's [third-party notice](../THIRD_PARTY_NOTICES.md). The policy distinguishes voluntary text attribution from strict no-alteration/no-endorsement of MTGJSON brand assets. **No logo was added.** Separate third-party rights/distribution clearance remains **NOT DONE**; reviewing public policies is not itself a legal clearance.
-
-This documentation-only follow-up does not change profile bytes, converter code or the official 13 November source. Automated weekly updates and dataset publication remain intentionally disabled.
+**Decision:** GO for the independent converter and verified current-source output. No automatic authorization to publish, modify other repositories or run weekly releases.
