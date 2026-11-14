@@ -40,11 +40,11 @@ class ReviewedOmissionTests(unittest.TestCase):
         self.assertTrue(slim.output_schema(P22))
         self.assertTrue(slim.output_schema(P23))
 
-    def test_main_does_not_read_archived_profile_or_07nov_fields(self):
+    def test_main_does_not_read_archived_profile_or_historical_field_baseline(self):
         original_read_text = Path.read_text
 
         def refuse_historical(path, *args, **kwargs):
-            if path.name in ('v2_1.json', 'v2_2.json', '07nov-fields.json'):
+            if path.name in ('v2_1.json', 'v2_2.json', 'historical-2026-11-07-field-baseline.json'):
                 raise AssertionError('active 2.3 accessed historical baseline')
             return original_read_text(path, *args, **kwargs)
 

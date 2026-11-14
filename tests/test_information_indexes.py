@@ -13,7 +13,7 @@ ROOT=Path(slim.__file__).parent
 class InformationContractTests(unittest.TestCase):
     def test_profile_is_full_historical_superset_with_exact_contract(self):
         p=json.loads((ROOT/'profiles/v2_2.json').read_text())
-        contract=json.loads((ROOT/'contracts/07nov-fields.json').read_text())['tables']
+        contract=json.loads((ROOT/'contracts/historical-2026-11-07-field-baseline.json').read_text())['tables']
         self.assertEqual(p['historical_contract'],contract)
         old=json.loads((ROOT/'profiles/v2_1.json').read_text())
         self.assertEqual(set(p['tables']),set(contract))
