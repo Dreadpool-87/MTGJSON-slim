@@ -122,6 +122,9 @@ def inventory(path):
         return result
 
 
+DEFAULT_PROFILE_PATH = Path(__file__).resolve().parent / 'profiles' / 'v2_3.json'
+
+
 def check_profile(p):
     required = {'version', 'description', 'source_schema', 'tables', 'unique_keys', 'relationships'}
     if not isinstance(p, dict) or not required <= set(p) or not set(p) <= required | {'indexes', 'historical_contract', 'intentional_omissions'}:
@@ -130,26 +133,25 @@ def check_profile(p):
         raise ValueError('invalid profile version')
     if not isinstance(p['tables'], dict) or not p['tables'] or not isinstance(p['unique_keys'], dict):
         raise ValueError('invalid profile tables or keys')
-    # Profile 2.3 is an explicit, reviewed exception to the old preservation guard.
-    # The original November contract and profile 2.2 are never rewritten.
-    omissions = {}
+    # Active main profile is locked to its own reviewed output selection.
+    # Older 2.1/2.2 profiles remain reproducible, but 2.3 does not read either.
     if p['version'] == '2.3':
-        omissions = {'cards': ['flavorText', 'isStorySpotlight'], 'tokens': ['flavorText']}
-        if p.get('intentional_omissions') != omissions:
-            raise ValueError('intentional omissions must match the exact approved profile 2.3 exceptions')
+        if 'historical_contract' in p or 'intentional_omissions' in p:
+            raise ValueError('main profile 2.3 cannot depend on historical contracts or exceptions')
         try:
-            previous = json.loads((Path(__file__).resolve().parent / 'profiles' / 'v2_2.json').read_text())
+            lock_path = Path(__file__).resolve().parent / 'contracts' / 'main-profile-2.3.json'
+            lock = json.loads(lock_path.read_text())
         except (OSError, ValueError) as e:
-            raise ValueError('profile 2.2 baseline unavailable for profile 2.3 verification') from e
-        expected_tables = {table: [col for col in columns if col not in omissions.get(table, [])]
-                           for table, columns in previous['tables'].items()}
-        if p['tables'] != expected_tables or p['source_schema'] != previous['source_schema'] \
-                or p.get('indexes') != previous.get('indexes') \
-                or p['relationships'] != previous['relationships'] \
-                or p['unique_keys'] != previous['unique_keys']:
-            raise ValueError('profile 2.3 may remove only the three explicitly approved columns')
+            raise ValueError('main profile 2.3 lock unavailable') from e
+        fields = ('tables', 'indexes', 'unique_keys', 'relationships')
+        if lock.get('profile_version') != '2.3' or any(
+                p.get(field) != lock.get(field) for field in fields):
+            raise ValueError('main profile 2.3 differs from locked approved selection')
+    elif re.fullmatch(r'\d+(?:\.\d+)?', p['version']) and tuple(
+            int(n) for n in p['version'].split('.')) >= (2, 4):
+        raise ValueError('new numeric profile requires explicit reviewed lock')
     elif 'intentional_omissions' in p:
-        raise ValueError('intentional omissions are only approved for profile 2.3')
+        raise ValueError('intentional omissions are not supported for this profile')
     # Compile the reviewed source DDL in memory to derive column types and indexes.
     with closing(sqlite3.connect(':memory:')) as c:
         try:
@@ -164,16 +166,17 @@ def check_profile(p):
                 "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type,name")]
             if actual != rows:
                 raise ValueError('profile source schema is not canonical')
+            # Historical 07Nov preservation guard applies to archived profile 2.2
+            # only. The active 2.3 uses the independent locked selection above.
             contract = p.get('historical_contract', {})
-            numeric_version = re.match(r'^(\d+)(?:\.(\d+))?', p['version'])
-            if numeric_version and tuple(int(x or 0) for x in numeric_version.groups()) >= (2, 2):
+            if p['version'] == '2.2':
                 try:
                     reference_path = Path(__file__).resolve().parent / 'contracts' / '07nov-fields.json'
                     reference = json.loads(reference_path.read_text())['tables']
                 except (OSError, ValueError, KeyError) as e:
                     raise ValueError('historical reference contract unavailable') from e
                 if contract != reference:
-                    raise ValueError('historical contract missing or differs from fixed 07Nov reference')
+                    raise ValueError('historical reference contract differs from fixed 07Nov reference')
             if not isinstance(contract, dict):
                 raise ValueError('invalid historical field contract')
             for table, fields in contract.items():
@@ -181,11 +184,7 @@ def check_profile(p):
                     raise ValueError(f'historical table missing or invalid: {table}')
                 info = {x[1]: x for x in c.execute(f'PRAGMA table_info({quote(table)})')}
                 for field, declared_type in fields.items():
-                    if field not in info:
-                        raise ValueError(f'historical source field missing: {table}.{field}')
-                    if field not in p['tables'][table]:
-                        if field in omissions.get(table, []):
-                            continue
+                    if field not in p['tables'][table] or field not in info:
                         raise ValueError(f'historical field missing: {table}.{field}')
                     if sqlite_affinity(declared_type) != sqlite_affinity(info[field][2]):
                         raise ValueError(f'historical affinity changed: {table}.{field}')
@@ -475,10 +474,11 @@ def main():
     ver = subs.add_parser('validate')
     ver.add_argument('--database', required=True)
     ver.add_argument('--source')
-    ver.add_argument('--profile', required=True)
+    ver.add_argument('--profile', default=str(DEFAULT_PROFILE_PATH))
     b = subs.add_parser('build')
-    for flag in ['archive', 'sha256', 'profile', 'output-dir', 'tool-commit']:
+    for flag in ['archive', 'sha256', 'output-dir', 'tool-commit']:
         b.add_argument('--' + flag, required=True)
+    b.add_argument('--profile', default=str(DEFAULT_PROFILE_PATH))
     for sub in [dl, inv, ver, b]:
         sub.add_argument('--report', required=True)
     args = parser.parse_args()
