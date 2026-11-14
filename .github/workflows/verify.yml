@@ -2,11 +2,16 @@ name: Verify MTGJSON slim
 on:
   workflow_dispatch:
   pull_request:
-  # A change to this workflow starts the first public Release build after merge.
+  # Rebuild official SQLite when the SQLite pipeline or its reviewed profile changes.
   push:
     branches: [main]
     paths:
       - '.github/workflows/verify.yml'
+      - 'slim.py'
+      - 'profiles/v2_3.json'
+      - 'contracts/main-profile-2.3.json'
+      - 'scripts/release_plan.py'
+      - 'scripts/package_extra_formats.py'
   # Full rebuild every Tuesday at 07:00 Europe/Brussels, including DST.
   schedule:
     - cron: '0 7 * * 2'
