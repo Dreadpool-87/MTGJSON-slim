@@ -20,7 +20,7 @@ python slim.py inventory --database downloads/AllPrintings.sqlite --report evide
 python slim.py build \
   --archive downloads/AllPrintings.sqlite.xz \
   --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
-  --profile profiles/v2_2.json --output-dir output \
+  --profile profiles/v2_3.json --output-dir output \
   --tool-commit "$(git rev-parse HEAD)" --report evidence/build.json
 ```
 
@@ -31,8 +31,8 @@ For a checksum-only upstream check, use `download --previous-sha256 <prior-offic
 For independent validation, find the version-specific output filename in `output/manifest.json`:
 
 ```bash
-python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.2.sqlite \
-  --source downloads/AllPrintings.sqlite --profile profiles/v2_2.json \
+python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.3.sqlite \
+  --source downloads/AllPrintings.sqlite --profile profiles/v2_3.json \
   --report evidence/validation.json
 ```
 
@@ -44,10 +44,10 @@ When distribution has been separately cleared and approved, **both** database va
 
 | Planned asset | Purpose |
 | --- | --- |
-| `AllPrintings-slim-<source-version>-profile-2.2.sqlite` | Uncompressed, directly usable SQLite database |
-| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.sha256` | SHA-256 verification for the uncompressed database |
-| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
-| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite` | Uncompressed, directly usable SQLite database |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.sha256` | SHA-256 verification for the uncompressed database |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
 | `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
 | `MTGJSON_LICENSE.txt` | Required upstream MIT copyright and license notice when release redistribution is authorized |
 
@@ -61,28 +61,30 @@ A `.sql` export is a text script for reconstructing a database, not a directly q
 
 ## Current SQLite data profile
 
-The current [profile](profiles/v2_2.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It pins the complete upstream schema observed for MTGJSON `5.3.0+20261113` and **fails closed** if MTGJSON adds, removes or changes its schema. Changes require an explicit profile review rather than silent data loss.
+The current [profile](profiles/v2_3.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It pins the complete upstream schema observed for MTGJSON `5.3.0+20261113` and **fails closed** if MTGJSON adds, removes or changes its schema. Changes require an explicit profile review rather than silent data loss.
 
-The output contains **8 tables, 227 columns and 20 explicit indexes**. It preserves every selected record, NULL, face relationship, card printing and language, including printed/original names and text. There is no English-only filter or card-type exclusion.
+The output contains **8 tables, 224 columns and 20 explicit indexes**.
+
+**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The existing 07nov information-preservation contract is **not changed**; `slim.py` applies only the three reviewed exclusions for profile 2.3. Older profile 2.2 remains reproducible. Excluding narrative text does **not** automatically authorize redistribution of the remaining MTG card texts. It preserves every selected record, NULL, face relationship, card printing and language, including printed/original names and text. There is no English-only filter or card-type exclusion.
 
 | Area | Current policy |
 | --- | --- |
 | Cards and tokens | Keep identities, set/collector numbers, names, Oracle and printed text, mana/type information, multiple faces, relationships, flags, printing and artwork/reference metadata |
 | External identifiers, legalities and rulings | Keep all selected external IDs, per-format legality information and card-linked rulings |
 | Sets and source metadata | Keep codes, set identities, dates, language metadata, source version/date and token-set links |
-| Removed data | Omit localized translation table `cardForeignData`, set-name translations, product/purchase/booster/deck-list tables and six packaging-related card/token fields |
+| Removed data | Omit localized translation table `cardForeignData`, set-name translations, product/purchase/booster/deck-list tables and six packaging-related fields plus `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight` |
 | Source safety | Verify the official source checksum, pin the upstream schema and reject missing required fields, unknown schema changes or broken relationships |
 | Lookup policy | Use verified UUID/code identity indexes and non-unique Scryfall printing/Oracle-ID indexes where multi-face records share external IDs |
 
-Every retained value is copied directly from the verified source; no fuzzy matching, translation, Oracle-text reconstruction, rules inference or card-strength claims are added. For exact selections, see the [complete current SQLite data inventory](docs/PROFILE_2_2_DATA_INVENTORY.md).
+Every retained value is copied directly from the verified source; no fuzzy matching, translation, Oracle-text reconstruction, rules inference or card-strength claims are added. For exact selections, see the [complete current SQLite data inventory](docs/PROFILE_2_3_DATA_INVENTORY.md).
 
 ### Exact data retention and removal
 
-For an **exhaustive, table-by-table and field-by-field list** of what is kept and what is removed, read **[Profile 2.2 — retained and omitted SQLite data](docs/PROFILE_2_2_DATA_INVENTORY.md)**. It is checked against the actual versioned profile, not an approximate description.
+For an **exhaustive, table-by-table and field-by-field list** of what is kept and what is removed, read **[Profile 2.3 — retained and omitted SQLite data](docs/PROFILE_2_3_DATA_INVENTORY.md)**. It is checked against the actual versioned profile, not an approximate description.
 
-From 20 source tables, the output retains 8 and omits 12. The complete `cardForeignData` and `setTranslations` tables and sales, sealed-product, booster, deck-list and token-product tables are excluded. Within `cards` and `tokens`, the only source fields dropped are `boosterTypes`, `skuIds` and `sourceProducts` (three fields per table, six total). Every field of the six other retained tables remains. Original non-English physical printing records and printed names are **not** removed. Schema pinning still checks all omitted upstream tables for drift.
+From 20 source tables, the output retains 8 and omits 12. The complete `cardForeignData` and `setTranslations` tables and sales, sealed-product, booster, deck-list and token-product tables are excluded. Within `cards` and `tokens`, excluded source fields are `boosterTypes`, `skuIds` and `sourceProducts` (three per table, six total), plus exactly `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. These three are non-gameplay narrative fields. Every field of the six other retained tables remains. Original non-English physical printing records and printed names are **not** removed. Schema pinning still checks all omitted upstream tables for drift.
 
-**Verification status:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md).
+**Historical profile 2.2 verification:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [historical Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md); profile 2.3 results must be independently checked.
 
 The scheduled workflow is configured for **Tuesday at 07:00 Europe/Brussels**. It always builds a fresh verified SQLite and derives the XZ archive from that SQLite. Public release publishing remains disabled until rights approval.
 
@@ -95,7 +97,7 @@ python benchmarks/query_audit.py --database path/to/database.sqlite \
 
 Use the same saved case file for every compared database. The audit records exact SQL/parameters, result counts/digests, plans for every sample, five warm-cache timing batches and medians, and per-index dbstat footprints. Missing footprint capability is reported as null plus an error, never as zero bytes. These are sampled lookup workloads with full result retrieval, not whole-database latency promises or cold-cache tests. Oracle cohorts include singleton, moderate and high-fanout IDs; printing samples include singleton and shared multi-face IDs. Unknown-ID cases are explicitly synthetic. No personal collection is required.
 
-These are reproducible **sampled** query measurements, not a guarantee that every lookup is faster. Read the [current acceptance report](docs/acceptance-profile-2.2.md) for actual timings and limitations.
+These are reproducible **sampled** query measurements, not a guarantee that every lookup is faster. Read the [historical profile 2.2 acceptance report](docs/acceptance-profile-2.2.md) for actual timings and limitations.
 
 ## Reproducibility and provenance
 
@@ -111,7 +113,7 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 **Safe distribution:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation, meaningful changes and an explicit maintainer rights approval via repository variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED=true`. It rechecks the uploaded package, creates a GitHub **draft Release** with exactly the raw SQLite, XZ, their two checksum files and a manifest, verifies that all five assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
 
-**Outputs and retention:** Without authorization, only verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**; no database is exposed by the workflow. After approval, a changed verified database is transferred temporarily between jobs with a **1-day** retention and published as GitHub Release assets. The content selection remains slim: the same eight retained tables, 227 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
+**Outputs and retention:** Without authorization, only verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**; no database is exposed by the workflow. After approval, a changed verified database is transferred temporarily between jobs with a **1-day** retention and published as GitHub Release assets. The content selection remains slim: the same eight retained tables, 224 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
 
 **Security and limitations:** Scheduled Actions executions may be delayed or disabled by GitHub after prolonged inactivity. The profile intentionally rejects unexpected upstream schema changes; an update requiring a new profile must be reviewed rather than silently dropping fields. This workflow does not independently decide whether redistribution is lawful. No public Release can occur until the maintainer records that decision and enables the variable.
 
