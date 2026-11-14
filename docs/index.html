@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101827">
-  <meta name="description" content="Download the verified MTGJSON-slim SQLite card database as SQLite, XZ, Zstandard or ZIP directly from GitHub Releases.">
-  <title>MTGJSON-slim — Download SQLite</title>
+  <meta name="description" content="Download verified slim MTGJSON SQLite and JSON datasets with XZ, Zstandard and ZIP compression.">
+  <title>MTGJSON-slim — SQLite and JSON Downloads</title>
   <style>
     :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0c1220; color: #f4f7fb; }
     * { box-sizing: border-box; }
@@ -49,6 +49,12 @@
     .secondary { padding: 10px 4px; text-decoration: none; font-size: 0.94rem; }
     .file-note { min-height: 25px; color: #94a9bf; overflow-wrap: anywhere; margin: 15px 0 0; font-size: 0.8rem; }
     .footnote { margin: 18px 0 0; line-height: 1.5; font-size: 0.87rem; color: #a9b9cd; }
+    .json-panel { margin-top: 18px; }
+    .json-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .json-link { border: 1px solid #40516a; border-radius: 13px; padding: 16px; background: #111d2e; color: #d9ecf0; text-decoration: none; }
+    .json-link[aria-disabled="true"] { color: #8192a8; opacity: .65; pointer-events: none; }
+    .json-link strong { display: block; margin-bottom: 6px; }
+    .json-link span { color: #a9bbd0; font-size: .85rem; }
     .about { margin-top: 30px; padding: 25px 28px; border: 1px solid #34465f; border-radius: 18px; background: rgba(19, 29, 46, 0.8); }
     .about h2 { margin: 0 0 12px; font-size: 1.4rem; letter-spacing: -0.02em; }
     .about h3 { margin: 20px 0 7px; font-size: 1.05rem; }
@@ -59,7 +65,7 @@
     .credit { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #d7e2f1; }
     .credit img { width: 42px; height: auto; }
     .disclaimer { max-width: 420px; line-height: 1.5; }
-    @media (max-width: 620px) { main { padding: 35px 0; } .panel { padding: 20px; } .formats { grid-template-columns: 1fr; } .format-content { min-height: 90px; } .topbar { align-items: flex-start; } .download { width: 100%; } .action-row { justify-content: center; } }
+    @media (max-width: 620px) { main { padding: 35px 0; } .panel { padding: 20px; } .formats, .json-links { grid-template-columns: 1fr; } .format-content { min-height: 90px; } .topbar { align-items: flex-start; } .download { width: 100%; } .action-row { justify-content: center; } }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
@@ -69,12 +75,12 @@
     <a class="navlink" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">All releases</a>
   </div></header>
   <main class="shell">
-    <span class="eyebrow">Verified SQLite downloads</span>
-    <h1>One database.<br><em>Your format.</em></h1>
-    <p class="lead">The same verified Magic: The Gathering card data in four convenient download formats. Select what works best for your device and download directly from GitHub. No account or installation required to download.</p>
+    <span class="eyebrow">Verified MTG deckbuilding data</span>
+    <h1>Deckbuilding data.<br><em>Your format.</em></h1>
+    <p class="lead">Choose SQLite for indexed searches or JSON for applications and integrations. Both are built independently from verified official MTGJSON data, focused on deckbuilding. No GitHub account is needed.</p>
     <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Looking up the latest verified release…</span></div>
     <section class="panel" aria-labelledby="download-title">
-      <h2 id="download-title">Choose a download</h2>
+      <h2 id="download-title">SQLite downloads</h2>
       <p class="hint">All compressed formats unpack to the exact same SQLite database. File sizes are taken from the latest GitHub Release.</p>
       <fieldset><legend>Select your format</legend>
         <div class="formats" id="formats">
@@ -87,11 +93,23 @@
       <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
       <p class="file-note" id="file-note" aria-live="polite">Release files are hosted on GitHub, not this site.</p>
     </section>
+    <section class="panel json-panel" aria-labelledby="json-title">
+      <h2 id="json-title">JSON downloads</h2>
+      <p class="hint">An independently sourced, deckbuilding-focused AllPrintings-slim.json. JSON and SQLite are not byte-identical or schema-identical. JSON files are available here only after a verified public Release.</p>
+      <p id="json-status" class="status" role="status" aria-live="polite">Checking JSON availability…</p>
+      <div class="json-links">
+        <a class="json-link" data-json-extension=".json.xz" aria-disabled="true"><strong>JSON XZ · Smallest</strong><span>Not yet published</span></a>
+        <a class="json-link" data-json-extension=".json.zst" aria-disabled="true"><strong>JSON Zstandard · Fast</strong><span>Not yet published</span></a>
+        <a class="json-link" data-json-extension=".json.zip" aria-disabled="true"><strong>JSON ZIP · Easy</strong><span>Not yet published</span></a>
+        <a class="json-link" data-json-extension=".json" aria-disabled="true"><strong>JSON · Uncompressed</strong><span>Not yet published</span></a>
+      </div>
+      <p class="footnote">Every public JSON download requires a matching SHA-256 checksum sidecar.</p>
+    </section>
     <section class="about" aria-labelledby="why-slim">
       <h2 id="why-slim">Why MTGJSON-slim?</h2>
       <p>The official <a href="https://mtgjson.com/">MTGJSON</a> dataset is comprehensive. This slim edition removes less relevant shopping, sealed-product, booster, source deck-list, translation-table and narrative data while preserving verified card and token printings, identities, rules text, multi-face relationships, rulings, legalities and useful search indexes.</p>
       <h3>Who is it for?</h3>
-      <p>AI agents, deckbuilding tools, collection managers, card-search apps, deck validators and swap advisors that need a smaller, dependable SQLite card-data source. All retained card values come from the verified official source; original non-English printing records remain included.</p>
+      <p>AI agents, deckbuilding tools, collection managers, card-search apps, deck validators and swap advisors that need smaller, dependable SQLite or JSON card data. All retained card values come from the verified official source; original non-English printing records remain included.</p>
       <p><strong>What it is not:</strong> a standalone deckbuilder, AI model, game simulator or complete rules engine. Integrating tools must supply their own deckbuilding and rules logic. <a href="https://github.com/Dreadpool-87/MTGJSON-slim#why-does-a-slim-version-exist">Read more about the data selection and limitations</a>.</p>
     </section>
     <p class="footnote">New verified releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
@@ -177,6 +195,42 @@
         }
       };
       load();
+    })();
+  </script>
+  <script>
+    (() => {
+      'use strict';
+      const repo = 'Dreadpool-87/MTGJSON-slim';
+      const prefix = 'https://github.com/' + repo + '/releases/download/';
+      const links = [...document.querySelectorAll('[data-json-extension]')];
+      const status = document.getElementById('json-status');
+      fetch('https://api.github.com/repos/' + repo + '/releases/latest', {
+        headers: {'Accept': 'application/vnd.github+json'}, cache: 'no-store'
+      }).then(response => {
+        if (!response.ok) throw new Error('GitHub API unavailable');
+        return response.json();
+      }).then(release => {
+        if (!release || release.draft || !Array.isArray(release.assets)) throw new Error('No release');
+        let enabled = 0;
+        for (const link of links) {
+          const suffix = link.dataset.jsonExtension;
+          const asset = release.assets.find(item =>
+            item.name.startsWith('AllPrintings-slim-') && item.name.endsWith(suffix) &&
+            typeof item.browser_download_url === 'string' && item.browser_download_url.startsWith(prefix));
+          const sha = asset && release.assets.find(item =>
+            item.name === asset.name + '.sha256' &&
+            typeof item.browser_download_url === 'string' && item.browser_download_url.startsWith(prefix));
+          if (!asset || !sha) continue;
+          link.href = asset.browser_download_url;
+          link.removeAttribute('aria-disabled');
+          link.querySelector('span').textContent = (asset.size / 1000000).toFixed(1) + ' MB · Download';
+          enabled++;
+        }
+        status.textContent = enabled ? enabled + ' verified JSON formats available.' :
+          'JSON is not yet included in the latest public Release.';
+      }).catch(() => {
+        status.textContent = 'JSON availability could not be checked. See GitHub Releases.';
+      });
     })();
   </script>
 </body>
