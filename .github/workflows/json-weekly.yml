@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install -r requirements-json.txt
           if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
-      - run: python -m unittest discover -s tests -v
+      - run: python scripts/run_regression_tests.py
   real-data:
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
     needs: tests

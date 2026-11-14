@@ -38,10 +38,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install JSON parser
-        run: python -m pip install -r requirements-json.txt
+      - name: Install full regression dependencies
+        run: |
+          python -m pip install -r requirements-json.txt
+          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - name: Run all existing and new regression tests
-        run: python -m unittest discover -s tests -v
+        run: python scripts/run_regression_tests.py
 
   real-data:
     if: github.event_name == 'pull_request' || ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main')
@@ -168,8 +170,12 @@ jobs:
           set -euo pipefail
           name=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["output"]["json"]["name"])')
           date=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["upstream"]["date"])')
-          fp=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["data_sha256"][:16])')
-          test "$RELEASE_TAG" = "atomic-slim-$date-$fp"
+          python - <<'PY'
+          import json, os
+          from scripts.atomic_release_plan import release_tag
+          manifest = json.load(open("candidate/atomic-manifest.json"))
+          assert os.environ["RELEASE_TAG"] == release_tag(manifest), "Unexpected Atomic release identity"
+          PY
           files=("candidate/$name" "candidate/$name.sha256"
                  "candidate/$name.xz" "candidate/$name.xz.sha256"
                  "candidate/$name.zst" "candidate/$name.zst.sha256"
