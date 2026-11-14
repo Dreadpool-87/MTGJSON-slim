@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import shutil
 import lzma
 import hashlib
 from pathlib import Path
@@ -11,6 +12,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import json_release_plan
+import rehydrate_json
 import slim_json
 
 
@@ -55,6 +57,21 @@ class JsonReleasePlanTests(unittest.TestCase):
         archived.write_bytes(b"tampered")
         with self.assertRaises(ValueError):
             json_release_plan.verify_package(self.output)
+
+    def test_compressed_handoff_rehydrates_and_revalidates_exact_json(self):
+        candidate = self.output.parent / "release-candidate"
+        candidate.mkdir()
+        names = [self.manifest["output"]["xz"]["name"],
+                 self.manifest["output"]["xz"]["name"] + ".sha256",
+                 "json-manifest.json"]
+        for name in names:
+            shutil.copyfile(self.output / name, candidate / name)
+        result = rehydrate_json.prepare(candidate)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["sha256"], self.manifest["output"]["json"]["sha256"])
+        self.assertEqual(json_release_plan.verify_package(candidate), self.manifest)
+        with self.assertRaises(FileExistsError):
+            rehydrate_json.prepare(candidate)
 
     def test_missing_fingerprint_fails_closed(self):
         stale = copy.deepcopy(self.manifest)
