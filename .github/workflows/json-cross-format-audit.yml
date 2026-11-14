@@ -8,6 +8,8 @@ on:
       - "tests/test_json_sqlite_audit.py"
       - "scripts/inspect_official_sqlite.py"
       - "scripts/audit_json_field_selection.py"
+      - "slim.py"
+      - "tests/test_upstream_schema_order.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -38,6 +40,15 @@ jobs:
             --checksum downloads-sqlite/AllPrintings.sqlite.xz.sha256 \
             --profile profiles/v2_3.json --output-dir output-official-sqlite \
             --report evidence/official-sqlite-schema.json
+      - name: Build and verify slim SQLite against reviewed order-compatible official schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v python slim.py build \
+            --archive downloads-sqlite/AllPrintings.sqlite.xz \
+            --sha256 "$(cat downloads-sqlite/AllPrintings.sqlite.xz.sha256)" \
+            --profile profiles/v2_3.json --output-dir output-sqlite \
+            --tool-commit "$GITHUB_SHA" --report evidence/sqlite-source-build.json
       - name: Build and verify slim JSON independently from official JSON
         shell: bash
         run: |
@@ -55,10 +66,10 @@ jobs:
             --source downloads-json/AllPrintings.json.xz \
             --slim-json "output-json/$json_file" \
             --report evidence/json-field-selection.json
-      - name: Research matching JSON and official SQLite identities (NOT a slim SQLite acceptance)
+      - name: Compare same-date JSON and validated slim SQLite printing identities and fields
         run: |
           python scripts/audit_json_sqlite.py \
-            --json-package output-json --sqlite-package output-official-sqlite \
+            --json-package output-json --sqlite-package output-sqlite \
             --report evidence/json-sqlite-cross-format.json
       - name: Retain evidence only, never publish data candidates
         if: always()
@@ -69,5 +80,7 @@ jobs:
             evidence/*.json
             output-json/json-manifest.json
             output-official-sqlite/manifest.json
+            output-sqlite/manifest.json
+            output-sqlite/validation.json
           if-no-files-found: warn
           retention-days: 14
