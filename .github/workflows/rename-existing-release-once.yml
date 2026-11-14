@@ -1,0 +1,31 @@
+name: Rename existing MTGJSON-slim Release title (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rename-existing-release-once.yml'
+permissions:
+  contents: read
+jobs:
+  rename-existing-release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Update visible title only; keep tag and assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: slim-2026-11-13-8fd830df9bd26ec5
+          NEW_TITLE: MTGJSON-slim — 2026-11-13
+        run: |
+          set -euo pipefail
+          assets_before=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length')
+          test "$assets_before" -eq 6
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --title "$NEW_TITLE"
+          actual=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json name --jq '.name')
+          assets_after=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length')
+          test "$actual" = "$NEW_TITLE"
+          test "$assets_after" -eq "$assets_before"
