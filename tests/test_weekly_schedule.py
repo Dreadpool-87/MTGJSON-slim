@@ -47,6 +47,8 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('--draft=false --latest', release)
         self.assertIn('MTGJSON_LICENSE.txt', release)
         self.assertIn('-eq 6', release)
+        self.assertIn('--title "MTGJSON-slim — $source_date"', release)
+        self.assertNotIn('--title "MTGJSON slim $RELEASE_TAG"', release)
 
     def test_only_changed_validated_packages_are_transferred(self):
         self.assertIn("steps.release_plan.outputs.publish == 'true'", self.workflow)
@@ -64,6 +66,9 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('PUBLICATION_ENABLED', self.readme)
         self.assertIn('## Source and attribution', self.readme)
         self.assertIn('https://mtgjson.com/license/', self.readme)
+        self.assertIn('src="https://mtgjson.com/images/assets/logo-mtgjson.svg"', self.readme)
+        self.assertIn('alt="MTGJSON logo"', self.readme)
+        self.assertIn('not affiliated with or endorsed by MTGJSON', self.readme)
         self.assertIn('The [first public Release]', self.readme)
         self.assertIn('every scheduled run', self.readme)
         self.assertIn('all six assets are present', self.readme)
