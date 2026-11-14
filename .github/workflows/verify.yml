@@ -1,20 +1,15 @@
 name: Verify MTGJSON slim
 on:
   workflow_dispatch:
-    inputs:
-      previous_upstream_sha256:
-        description: Optional digest from a previous successful manifest; skip unchanged upstream
-        required: false
-        type: string
   pull_request:
-  # Tuesday at 07:00 Belgian local time, with automatic DST handling.
+  # Full rebuild every Tuesday at 07:00 Europe/Brussels, including DST.
   schedule:
     - cron: '0 7 * * 2'
       timezone: 'Europe/Brussels'
 permissions:
   contents: read
 concurrency:
-  group: mtgjson-slim-${{ github.ref }}
+  group: mtgjson-slim-${ github.ref }}
   cancel-in-progress: false
 jobs:
   tests:
@@ -26,33 +21,76 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
+
   real-data:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main'
     needs: tests
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      publish: ${ steps.release_plan.outputs.publish }}
+      tag: ${ steps.release_plan.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Download and verify official SQLite archive
-        id: download
-        env:
-          PREVIOUS_SHA256: ${{ inputs.previous_upstream_sha256 }}
+      - name: Download official SQLite archive every week
         run: |
-          python slim.py download --directory downloads --report evidence/download.json \
-            --previous-sha256 "$PREVIOUS_SHA256"
-          python -c "import json,os; r=json.load(open('evidence/download.json')); print('changed=' + str(r['status'] != 'UNCHANGED').lower(), file=open(os.environ['GITHUB_OUTPUT'],'a'))"
-      - name: Prepare and validate without publishing datasets
-        if: steps.download.outputs.changed == 'true'
+          python slim.py download --directory downloads --report evidence/download.json
+      - name: Fresh slim SQLite build, source validation and lossless XZ
         shell: bash
         run: |
           python slim.py build --archive downloads/AllPrintings.sqlite.xz \
             --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
             --profile profiles/v2_2.json --output-dir output \
             --tool-commit "$GITHUB_SHA" --report evidence/build.json
-      - name: Retain reports only
+      - name: Verify formats and compare against last published Release
+        id: release_plan
+        shell: bash
+        env:
+          GH_TOKEN: ${ github.token }}
+          DISTRIBUTION_APPROVED: ${ vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous evidence
+          if [[ "${DISTRIBUTION_APPROVED:-}" == "true" ]]; then
+            http_code=$(curl --silent --show-error --retry 3 --max-time 40 \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -o previous/release.json -w '%{http_code}' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest")
+            case "$http_code" in
+              200)
+                previous_tag=$(python -c 'import json; print(json.load(open("previous/release.json"))["tag_name"])')
+                gh release download "$previous_tag" --pattern manifest.json --dir previous
+                test -f previous/manifest.json
+                python scripts/release_plan.py --package output \
+                  --previous previous/manifest.json --report evidence/release_plan.json
+                ;;
+              404)
+                python scripts/release_plan.py --package output \
+                  --report evidence/release_plan.json
+                ;;
+              *)
+                echo "Cannot determine last approved Release: HTTP $http_code" >&2
+                exit 1
+                ;;
+            esac
+          else
+            python scripts/release_plan.py --package output --disabled \
+              --report evidence/release_plan.json
+          fi
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          result = json.load(open("evidence/release_plan.json"))
+          print("publish=" + str(result["action"] == "PUBLISH").lower())
+          print("tag=" + result["tag"])
+          PY
+      - name: Retain verification reports only
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -64,3 +102,78 @@ jobs:
             output/source-inventory.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Transfer candidate only if approved and meaningfully changed
+        if: steps.release_plan.outputs.publish == 'true' && vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-release-candidate
+          path: |
+            output/*.sqlite
+            output/*.sqlite.sha256
+            output/*.sqlite.xz
+            output/*.sqlite.xz.sha256
+            output/manifest.json
+            output/validation.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    # Publishing has write permissions only in its isolated job on main.
+    if: github.ref == 'refs/heads/main' && needs.real-data.outputs.publish == 'true' && vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED == 'true'
+    needs: real-data
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-release-candidate
+          path: candidate
+      - name: Recheck downloaded candidate and immutable release tag
+        env:
+          RELEASE_TAG: ${ needs.real-data.outputs.tag }}
+        run: |
+          set -euo pipefail
+          python scripts/release_plan.py --package candidate --disabled --report release-recheck.json
+          python - <<'PY'
+          import json, os
+          m = json.load(open("candidate/manifest.json"))
+          expected = "slim-" + m["upstream"]["date"] + "-" + m["content"]["fingerprint"][:16]
+          assert os.environ["RELEASE_TAG"] == expected, "unexpected Release tag"
+          PY
+      - name: Upload draft first, verify assets and publish last
+        shell: bash
+        env:
+          GH_TOKEN: ${ github.token }}
+          RELEASE_TAG: ${ needs.real-data.outputs.tag }}
+        run: |
+          set -euo pipefail
+          db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
+          xz="${db}.xz"
+          files=("candidate/$db" "candidate/$db.sha256"
+                 "candidate/$xz" "candidate/$xz.sha256" "candidate/manifest.json")
+          for item in "${files[@]}"; do test -s "$item"; done
+          cat > release-notes.md <<'EOF'
+          Validated slim SQLite built from official MTGJSON AllPrintings.
+
+          - Raw SQLite can be used immediately.
+          - XZ decompresses to the exact same SQLite; both have SHA-256 sidecars.
+          - See manifest.json for source and output provenance.
+          - Powered by MTGJSON (https://mtgjson.com/). Independent unofficial project, not endorsed by Wizards of the Coast or MTGJSON.
+          - Third-party notices: https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/THIRD_PARTY_NOTICES.md
+          EOF
+          gh release create "$RELEASE_TAG" "${files[@]}" \
+            --target "$GITHUB_SHA" --title "MTGJSON slim $RELEASE_TAG" \
+            --notes-file release-notes.md --draft
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > published-assets.txt
+          for item in "${files[@]}"; do
+            grep -Fx "$(basename "$item")" published-assets.txt >/dev/null
+          done
+          [[ $(wc -l < published-assets.txt) -eq 5 ]]
+          gh release edit "$RELEASE_TAG" --draft=false --latest
