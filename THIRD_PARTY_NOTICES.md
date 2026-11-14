@@ -19,6 +19,6 @@ Profile 2.3 does **not** bundle card image files, `flavorText` or `isStorySpotli
 
 ## Branding and distribution
 
-Only text-based MTGJSON attribution is currently used; no MTGJSON or Wizards logos or artwork are packaged as project branding. Refer to the linked official brand-assets terms before using MTGJSON logos.
+The README displays MTGJSON's official SVG logo from its published URL without changing or repackaging it, alongside a clear independent-project disclaimer. No Wizards logos or card artwork are packaged as project branding. Follow the linked official brand-assets terms.
 
 Public [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases) include the raw SQLite file, lossless XZ copy, their SHA-256 sidecars, the provenance manifest and `MTGJSON_LICENSE.txt`. These checksums establish file integrity; they are not a determination of third-party intellectual-property rights.
