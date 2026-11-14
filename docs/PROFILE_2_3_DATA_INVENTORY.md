@@ -1,6 +1,6 @@
 # Profile 2.3 — precise retained and omitted SQLite fields
 
-This document is generated from the actual committed profile [`profiles/v2_3.json`](../profiles/v2_3.json). It describes the intended selection and existing source schema pin; it is not a claim of an independently measured new full-size build until that build passes.
+This document is generated from the actual committed profile [`profiles/v2_3.json`](../profiles/v2_3.json). It describes the intended selection and existing source schema pin; its exact selected fields and source-backed output were verified in an independent GitHub-hosted full-data comparison (see results below).
 
 - Source schema is pinned to official MTGJSON `5.3.0+20261113`, unchanged from profile 2.2. An upstream change fails closed until explicitly reviewed.
 - Output: **8 tables, 224 columns, 20 explicit indexes**; all rows in retained tables, card faces, UUIDs, languages and selected field values are preserved.
@@ -84,7 +84,7 @@ The earlier profile already omits **12 entire source tables**: `cardForeignData`
 - **All 20 indexes unchanged** and checked against profile 2.2. See below.
 - Original non-English physical printings and their retained printed names are still preserved. Dropping `cardForeignData` does not imply English-only printings.
 - This removes 3 output columns; it does not imply that a public dataset Release is legally authorized. The rights gate remains disabled until distribution is cleared.
-- Storage savings in raw SQLite and XZ depend on actual non-null value frequencies and SQLite page layout. **No size claim is made before two measured builds.**
+- Storage savings in raw SQLite and XZ depend on actual non-null value frequencies and SQLite page layout. The exact combined savings have now been measured, with a single official source archive for both profiles (see below). The contribution of each removed column individually was not measured.
 
 ## Explicit indexes (unchanged: 20)
 
@@ -111,6 +111,19 @@ The earlier profile already omits **12 entire source tables**: `cardForeignData`
 | `idx_tokens_set_number` | `tokens` | `setCode`, `number` | No |
 | `idx_tokens_uuid` | `tokens` | `uuid` | Yes |
 
+## Verified full-data comparison (14 November 2026)
+
+Both profiles were built and source-validated **independently from the exact same official archive** MTGJSON `5.3.0+20261113`, verified SHA-256 `628ff982b1a5b764f4b98dfca796fc46c4fd509cf2f4a01077ae01b5092fe42e`.
+
+| Output | Profile 2.2 | Profile 2.3 | Saved |
+| --- | ---: | ---: | ---: |
+| Raw `.sqlite` | 282,390,528 bytes | 276,037,632 bytes | **6,352,896 bytes** |
+| `.sqlite.xz` | 49,264,112 bytes | 47,118,052 bytes | **2,146,060 bytes** |
+
+The source-backed comparison verified that all 8 tables kept the same row counts (652,367 total retained rows), every retained column's logical values matched exactly across both full databases, all 20 index definitions were identical and only `cards.isStorySpotlight`, `cards.flavorText` and `tokens.flavorText` were absent. The `meta` source record remained unchanged. Both complete builds and every comparison test passed.
+
+**Evidence:** [GitHub Actions acceptance run #43570579132](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43570579132), artifact `validation-evidence` with `profile_comparison.json`, `build.json`, `build22.json`, validation reports and manifests. Build-byte results are specific to this source and GitHub runner; future versions can have different sizes.
+
 ## Testing and distribution
 
-Run `python -m unittest discover -s tests -v`. The new tests verify the complete v2.2→v2.3 field difference, exact approved omissions, retained rules/rulings/alternative names, preserved indexes, fail-closed behavior and live SQLite projection on a synthetic source. The weekly GitHub workflow uses `profiles/v2_3.json` and rebuilds a fresh SQLite before generating the lossless XZ copy. Public Releases remain guarded by explicit rights approval. Exact live source-backed acceptance and size measurements must be recorded separately; do not infer them from old v2.2 results.
+Run `python -m unittest discover -s tests -v`. The new tests verify the complete v2.2→v2.3 field difference, exact approved omissions, retained rules/rulings/alternative names, preserved indexes, fail-closed behavior and live SQLite projection on a synthetic source. The weekly GitHub workflow uses `profiles/v2_3.json` and rebuilds a fresh SQLite before generating the lossless XZ copy. Public Releases remain guarded by explicit rights approval. Full source-backed acceptance and exact measured sizes are recorded above. No public database Release was created.
