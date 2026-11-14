@@ -1,5 +1,6 @@
 """Isolated synthetic regressions for AtomicCards B1 and its independent auditor."""
 import copy
+import importlib.util
 import json
 import lzma
 from pathlib import Path
@@ -14,6 +15,7 @@ from scripts import atomic_release_plan as planning
 from scripts import package_atomic_formats as packaging
 
 ROOT = Path(__file__).resolve().parents[1]
+HAS_IJSON = importlib.util.find_spec('ijson') is not None
 
 
 class AtomicSlimTests(unittest.TestCase):
@@ -57,6 +59,7 @@ class AtomicSlimTests(unittest.TestCase):
                     "expected_paths": observed}
         self.contract_file.write_text(json.dumps(contract), encoding="utf-8")
 
+    @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_remove_exactly_three_properties_and_keep_nested_values(self):
         self.prepare()
         with patch.object(atomic_slim, "CONTRACT", self.contract_file):
@@ -84,6 +87,7 @@ class AtomicSlimTests(unittest.TestCase):
             atomic_slim.rehydrate(self.output)
             self.assertEqual(json.loads(raw.read_text())["data"], actual["data"])
 
+    @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_unsafe_alias_rejected(self):
         self.original["data"]["Example"][0]["convertedManaCost"] = 9
         self.prepare()
@@ -91,6 +95,7 @@ class AtomicSlimTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unsafe deprecated mana alias"):
                 atomic_slim.build(self.archive, self.sidecar, self.output)
 
+    @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_source_schema_drift_rejected(self):
         self.prepare()
         self.original["data"]["Example"][0]["unknownGameplayField"] = True
@@ -107,6 +112,7 @@ class AtomicSlimTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
             atomic_slim.check_source(self.archive, self.sidecar)
 
+    @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_independent_audit_catches_removed_rules(self):
         self.prepare()
         with patch.object(atomic_slim, "CONTRACT", self.contract_file):
@@ -172,6 +178,7 @@ class AtomicSlimTests(unittest.TestCase):
         self.assertIn("name: verified-atomic-release-candidate", workflow)
 
     @unittest.skipUnless(shutil.which("zstd"), "zstd CLI not available")
+    @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_zip_zstd_roundtrips(self):
         self.prepare()
         with patch.object(atomic_slim, "CONTRACT", self.contract_file):
