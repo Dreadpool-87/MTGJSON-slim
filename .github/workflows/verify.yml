@@ -154,6 +154,14 @@ jobs:
           expected = "slim-" + m["upstream"]["date"] + "-" + m["content"]["fingerprint"][:16]
           assert os.environ["RELEASE_TAG"] == expected, "unexpected Release tag"
           PY
+      - name: Generate and verify ZIP and Zstandard downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y zstd
+          fi
+          python scripts/package_extra_formats.py --package candidate --report extra-formats-verification.json
       - name: Upload draft first, verify assets and publish last
         shell: bash
         env:
@@ -163,14 +171,20 @@ jobs:
           set -euo pipefail
           db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
           xz="${db}.xz"
+          zst="${db}.zst"
+          zip="${db}.zip"
           files=("candidate/$db" "candidate/$db.sha256"
-                 "candidate/$xz" "candidate/$xz.sha256" "candidate/manifest.json" "MTGJSON_LICENSE.txt")
+                 "candidate/$xz" "candidate/$xz.sha256"
+                 "candidate/$zst" "candidate/$zst.sha256"
+                 "candidate/$zip" "candidate/$zip.sha256"
+                 "candidate/manifest.json" "MTGJSON_LICENSE.txt")
           for item in "${files[@]}"; do test -s "$item"; done
           cat > release-notes.md <<'EOF'
           Validated slim SQLite built from official MTGJSON AllPrintings.
 
           - Raw SQLite can be used immediately.
-          - XZ decompresses to the exact same SQLite; both have SHA-256 sidecars.
+          - XZ, Zstandard and ZIP unpack to the identical validated SQLite.
+          - All four downloadable formats have their own SHA-256 checksum sidecars.
           - See manifest.json for source and output provenance.
           - Powered by MTGJSON (https://mtgjson.com/). Independent unofficial project, not endorsed by Wizards of the Coast or MTGJSON.
           - The upstream MIT license notice is included as MTGJSON_LICENSE.txt.
@@ -184,5 +198,5 @@ jobs:
           for item in "${files[@]}"; do
             grep -Fx "$(basename "$item")" published-assets.txt >/dev/null
           done
-          [[ $(wc -l < published-assets.txt) -eq 6 ]]
+          [[ $(wc -l < published-assets.txt) -eq 10 ]]
           gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -2,7 +2,7 @@
 
 Independent, standard-library Python tooling for creating smaller, verified SQLite datasets from official [MTGJSON](https://mtgjson.com/) downloads.
 
-**Development preview.** Verified slim SQLite and lossless XZ downloads are available through [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases). The converter and database use the versioned [profile 2.3](profiles/v2_3.json).
+**Development preview.** Download the verified slim SQLite as raw SQLite, XZ, Zstandard or ZIP from [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases). The converter and database use the versioned [profile 2.3](profiles/v2_3.json).
 
 ## Requirements and use
 
@@ -40,22 +40,30 @@ python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.3.
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
 
-## Published database formats
+## Download formats and selector
 
-When a validated, changed dataset is published, **both** database variants appear on the **same MTGJSON-slim GitHub Release**. No second repository is needed:
+A simple, mobile-friendly download selector is included in [`docs/index.html`](docs/index.html). Once GitHub Pages is enabled, it is available at [the MTGJSON-slim download site](https://dreadpool-87.github.io/MTGJSON-slim/). The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files.
+
+**To activate GitHub Pages:** open this repository's **Settings → Pages**, choose **Deploy from a branch**, select **main** and **/docs**, then save. There is no separate site repository or paid hosting requirement.
+
+When a validated, changed dataset is published, **all four formats** appear in the **same MTGJSON-slim GitHub Release**:
 
 | Planned asset | Purpose |
 | --- | --- |
 | `AllPrintings-slim-<source-version>-profile-2.3.sqlite` | Uncompressed, directly usable SQLite database |
 | `AllPrintings-slim-<source-version>-profile-2.3.sqlite.sha256` | SHA-256 verification for the uncompressed database |
 | `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz.sha256` | SHA-256 verification for the XZ database |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zst` | Zstandard level 9: fast, compact decompression |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zst.sha256` | SHA-256 verification for Zstandard |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zip` | Standard ZIP with one SQLite file, convenient for Android and Windows |
+| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zip.sha256` | SHA-256 verification for ZIP |
 | `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
 | `MTGJSON_LICENSE.txt` | Upstream MTGJSON copyright and MIT license notice |
 
-The converter **already produces both database files locally**. The build now also emits and checks a checksum sidecar for **each** database variant. A compressed file must decompress byte-for-byte to its corresponding `.sqlite`; either file must contain the **same slim projection**: eight retained tables and the explicitly selected fields/indexes. Compression does not determine which data is excluded.
+The core converter builds the authoritative `.sqlite` and `.sqlite.xz`. The GitHub release job adds `.sqlite.zst` and `.sqlite.zip` **only after** the original candidate is validated, so temporary Actions artifact storage is not multiplied. Each download has a separate SHA-256 sidecar; XZ, Zstandard and ZIP are checked to unpack to the **exact same SQLite bytes**. The ZIP contains exactly one `.sqlite` file. Compression does not alter the selected eight tables, 224 columns or indexes. The converter itself still needs no Python packages; the publisher uses the system `zstd` CLI.
 
-**Release automation:** After validation, the workflow compares retained data and index definitions to the latest published Release. It creates and verifies a draft with the six package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
+**Release automation:** After validation, the workflow compares retained data and index definitions to the latest published Release. It creates and verifies a draft with the ten package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
 
 A `.sql` export is a text script for reconstructing a database, not a directly queryable SQLite file. `psql` is the PostgreSQL client and a `.psql` extension is not a universal database container. The project intentionally **does not** add SQL or PostgreSQL exports; they offer no clear benefit for the primary SQLite consumers and would add build/test complexity.
 
@@ -115,7 +123,7 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 **Change detection:** The newest successful published Release's manifest is compared with the newly built logical fingerprint. It includes all **retained data tables except the upstream `meta` row**, plus resulting SQL schema and indexes. Therefore an MTGJSON date/version-only change **does not** create another Release. A change in card/printing/ruling/legality/set data or schema/indexes **does**. This is a deliberate logical comparison, not a raw SQLite/XZ byte comparison. Each week is rebuilt and revalidated regardless of whether it is eventually published.
 
-**Verified release flow:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation and a meaningful data change. It rechecks the uploaded package, creates a GitHub **draft Release** with exactly six assets (raw SQLite, XZ, their two checksum files, the manifest and the upstream `MTGJSON_LICENSE.txt`), verifies all six assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
+**Verified release flow:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation and a meaningful data change. It rechecks the uploaded package, generates and validates ZIP/Zstandard, creates a GitHub **draft Release** with exactly ten assets (four database variants, four SHA-256 sidecars, the manifest and the upstream `MTGJSON_LICENSE.txt`), verifies all ten assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
 
 **Outputs and retention:** A no-change or failed build does not transfer a public database candidate. Verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**. A changed, verified database is transferred between jobs with **1-day** artifact retention and published as GitHub Release assets only after checks pass. The content selection remains slim: the same eight retained tables, 224 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
 

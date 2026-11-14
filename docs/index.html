@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Download the verified MTGJSON-slim SQLite card database as SQLite, XZ, Zstandard or ZIP directly from GitHub Releases.">
+  <title>MTGJSON-slim — Download SQLite</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0c1220; color: #f4f7fb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 12% -8%, #193c50 0, transparent 42%), radial-gradient(ellipse at 93% 20%, #202a53 0, transparent 43%), #0c1220; }
+    a { color: #9bdbec; }
+    a:focus-visible, input:focus-visible + .format-content { outline: 3px solid #7bdef0; outline-offset: 4px; }
+    .shell { width: min(100% - 36px, 900px); margin: 0 auto; }
+    header { padding: 26px 0; border-bottom: 1px solid #ffffff18; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { font-weight: 800; font-size: 1.12rem; color: #fff; text-decoration: none; letter-spacing: -0.02em; }
+    .brand span { color: #72d8d9; }
+    .navlink { color: #bdcadc; font-size: 0.91rem; text-decoration: none; }
+    .navlink:hover, footer a:hover { text-decoration: underline; }
+    main { padding: 52px 0 44px; }
+    .eyebrow { display: inline-flex; border: 1px solid #41616c; border-radius: 99px; padding: 6px 12px; color: #a8dce5; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); letter-spacing: -0.05em; line-height: 1.07; margin: 22px 0 18px; }
+    h1 em { color: #7de3df; font-style: normal; }
+    .lead { max-width: 670px; color: #becadc; line-height: 1.7; font-size: 1.05rem; margin: 0 0 26px; }
+    .status { display: flex; align-items: center; gap: 9px; min-height: 24px; color: #c0d0df; font-size: 0.9rem; margin-bottom: 28px; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #8492a6; flex: 0 0 auto; }
+    .status-dot.ready { background: #64d1a4; }
+    .status-dot.error { background: #f5c36e; }
+    .panel { border: 1px solid #34465f; border-radius: 20px; background: rgba(19, 29, 46, 0.95); padding: 28px; box-shadow: 0 25px 75px #00000025; }
+    .panel h2 { margin: 0 0 7px; font-size: 1.45rem; letter-spacing: -0.03em; }
+    .hint { color: #a9bbd0; margin: 0 0 24px; line-height: 1.5; }
+    fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+    legend { color: #dfe9f6; font-weight: 650; margin-bottom: 14px; }
+    .formats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .format { display: block; cursor: pointer; min-width: 0; }
+    .format input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .format-content { display: flex; flex-direction: column; min-height: 116px; border-radius: 13px; border: 1px solid #40516a; background: #111d2e; padding: 16px; transition: border-color .12s, background-color .12s; }
+    .format input:checked + .format-content { border-color: #83e3de; background: #19333e; box-shadow: inset 0 0 0 1px #83e3de; }
+    .format input:disabled + .format-content { opacity: 0.55; cursor: not-allowed; }
+    .format-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .format-name { font-weight: 750; font-size: 1rem; }
+    .format-size { color: #93e2d9; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.89rem; white-space: nowrap; }
+    .format-details { color: #a5b8cc; font-size: 0.87rem; margin-top: 10px; line-height: 1.45; }
+    .action-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
+    .download { display: inline-flex; align-items: center; justify-content: center; min-height: 49px; text-align: center; border-radius: 11px; background: #83e3de; color: #0e2430; padding: 12px 24px; font-size: 1rem; font-weight: 800; text-decoration: none; }
+    .download:hover { background: #a6f3ec; }
+    .secondary { padding: 10px 4px; text-decoration: none; font-size: 0.94rem; }
+    .file-note { min-height: 25px; color: #94a9bf; overflow-wrap: anywhere; margin: 15px 0 0; font-size: 0.8rem; }
+    .footnote { margin: 18px 0 0; line-height: 1.5; font-size: 0.87rem; color: #a9b9cd; }
+    footer { border-top: 1px solid #ffffff1c; padding: 28px 0 40px; color: #9caec1; font-size: 0.85rem; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
+    .credit { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #d7e2f1; }
+    .credit img { width: 42px; height: auto; }
+    .disclaimer { max-width: 420px; line-height: 1.5; }
+    @media (max-width: 620px) { main { padding: 35px 0; } .panel { padding: 20px; } .formats { grid-template-columns: 1fr; } .format-content { min-height: 90px; } .topbar { align-items: flex-start; } .download { width: 100%; } .action-row { justify-content: center; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header><div class="shell topbar">
+    <a class="brand" href="https://github.com/Dreadpool-87/MTGJSON-slim">MTGJSON<span>-slim</span></a>
+    <a class="navlink" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">All releases</a>
+  </div></header>
+  <main class="shell">
+    <span class="eyebrow">Verified SQLite downloads</span>
+    <h1>One database.<br><em>Your format.</em></h1>
+    <p class="lead">The same verified Magic: The Gathering card data in four convenient download formats. Select what works best for your device and download directly from GitHub. No account or installation required to download.</p>
+    <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Looking up the latest verified release…</span></div>
+    <section class="panel" aria-labelledby="download-title">
+      <h2 id="download-title">Choose a download</h2>
+      <p class="hint">All compressed formats unpack to the exact same SQLite database. File sizes are taken from the latest GitHub Release.</p>
+      <fieldset><legend>Select your format</legend>
+        <div class="formats" id="formats">
+          <label class="format"><input type="radio" name="format" value="xz" checked disabled><span class="format-content"><span class="format-header"><span class="format-name">XZ · Smallest</span><span class="format-size" id="size-xz">—</span></span><span class="format-details">Compact download with excellent compression.</span></span></label>
+          <label class="format"><input type="radio" name="format" value="zst" disabled><span class="format-content"><span class="format-header"><span class="format-name">Zstandard · Fast</span><span class="format-size" id="size-zst">—</span></span><span class="format-details">Fast to unpack on supported devices.</span></span></label>
+          <label class="format"><input type="radio" name="format" value="zip" disabled><span class="format-content"><span class="format-header"><span class="format-name">ZIP · Easy</span><span class="format-size" id="size-zip">—</span></span><span class="format-details">Easy to extract on Android, Windows and macOS.</span></span></label>
+          <label class="format"><input type="radio" name="format" value="sqlite" disabled><span class="format-content"><span class="format-header"><span class="format-name">SQLite · Uncompressed</span><span class="format-size" id="size-sqlite">—</span></span><span class="format-details">Ready for SQLite tools without unpacking.</span></span></label>
+        </div>
+      </fieldset>
+      <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
+      <p class="file-note" id="file-note" aria-live="polite">Release files are hosted on GitHub, not this site.</p>
+    </section>
+    <p class="footnote">New verified releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
+  </main>
+  <footer><div class="shell footer-inner">
+    <a class="credit" href="https://mtgjson.com/"><img src="https://mtgjson.com/images/assets/logo-mtgjson.svg" width="42" alt="MTGJSON logo"><span>Powered by MTGJSON</span></a>
+    <span class="disclaimer">Independent, unofficial community project. Not affiliated with or endorsed by MTGJSON or Wizards of the Coast. <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/THIRD_PARTY_NOTICES.md">Notices</a>.</span>
+  </div></footer>
+  <script>
+    (() => {
+      'use strict';
+      const repo = 'Dreadpool-87/MTGJSON-slim';
+      const releases = 'https://github.com/' + repo + '/releases/latest';
+      const prefix = 'https://github.com/' + repo + '/releases/download/';
+      const suffixes = {sqlite: '.sqlite', xz: '.sqlite.xz', zst: '.sqlite.zst', zip: '.sqlite.zip'};
+      const status = document.getElementById('status');
+      const dot = document.getElementById('status-dot');
+      const button = document.getElementById('download');
+      const checksum = document.getElementById('checksum');
+      const note = document.getElementById('file-note');
+      const inputs = [...document.querySelectorAll('input[name="format"]')];
+      let assets = {};
+      const safeUrl = asset => {
+        const url = asset && asset.browser_download_url;
+        return typeof url === 'string' && url.startsWith(prefix) ? url : null;
+      };
+      const formatBytes = bytes => (bytes / 1000000).toFixed(1) + ' MB';
+      const currentInput = () => inputs.find(input => input.checked && !input.disabled);
+      const refresh = () => {
+        const selected = currentInput();
+        const asset = selected && assets[selected.value];
+        if (!asset) {
+          button.href = releases;
+          button.textContent = 'View all release files';
+          checksum.href = releases;
+          checksum.hidden = true;
+          note.textContent = 'Select an available format to download.';
+          return;
+        }
+        button.href = safeUrl(asset) || releases;
+        button.textContent = 'Download ' + selected.value.toUpperCase();
+        note.textContent = asset.name + ' · ' + formatBytes(asset.size);
+        const sidecar = assets[selected.value + '-sha'];
+        checksum.hidden = !sidecar;
+        checksum.href = sidecar ? safeUrl(sidecar) || releases : releases;
+      };
+      inputs.forEach(input => input.addEventListener('change', refresh));
+      const load = async () => {
+        try {
+          const response = await fetch('https://api.github.com/repos/' + repo + '/releases/latest', {
+            headers: {'Accept': 'application/vnd.github+json'}, cache: 'no-store'
+          });
+          if (!response.ok) throw new Error('GitHub API returned ' + response.status);
+          const release = await response.json();
+          if (!release || !Array.isArray(release.assets) || release.draft) throw new Error('No published assets');
+          for (const [key, suffix] of Object.entries(suffixes)) {
+            const asset = release.assets.find(item => item.name.endsWith(suffix) && safeUrl(item));
+            if (asset) {
+              assets[key] = asset;
+              assets[key + '-sha'] = release.assets.find(item => item.name === asset.name + '.sha256' && safeUrl(item));
+            }
+            const input = inputs.find(item => item.value === key);
+            input.disabled = !asset;
+            const size = document.getElementById('size-' + key);
+            size.textContent = asset ? formatBytes(asset.size) : 'Not available';
+          }
+          if (!currentInput()) {
+            const first = inputs.find(input => !input.disabled);
+            if (first) first.checked = true;
+          }
+          const count = inputs.filter(input => !input.disabled).length;
+          if (!count) throw new Error('No supported SQLite download in this release');
+          dot.classList.add('ready');
+          status.textContent = release.name + ' · ' + count + ' formats available';
+          refresh();
+        } catch (error) {
+          dot.classList.add('error');
+          status.textContent = 'Unable to load GitHub release details right now.';
+          button.href = releases;
+          button.textContent = 'Open latest Release';
+          checksum.hidden = true;
+          note.textContent = 'You can still download directly from GitHub.';
+        }
+      };
+      load();
+    })();
+  </script>
+</body>
+</html>
