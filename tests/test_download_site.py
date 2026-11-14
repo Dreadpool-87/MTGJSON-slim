@@ -37,7 +37,7 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn("'/releases/latest'", self.html)
         self.assertIn("'browser_download_url'", self.html.replace('.browser_download_url', "'browser_download_url'"))
         self.assertIn('/releases/download/', self.html)
-        self.assertIn("item.name + '.sha256'", self.html)
+        self.assertIn("asset.name + '.sha256'", self.html)
         self.assertIn("if (!response.ok)", self.html)
 
     def test_mobile_accessibility_and_attribution(self):
