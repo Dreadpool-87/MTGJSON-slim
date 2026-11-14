@@ -5,7 +5,8 @@ This document is generated from the actual committed profile [`profiles/v2_3.jso
 - Source schema is pinned to official MTGJSON `5.3.0+20261113`, unchanged from profile 2.2. An upstream change fails closed until explicitly reviewed.
 - Output: **8 tables, 224 columns, 20 explicit indexes**; all rows in retained tables, card faces, UUIDs, languages and selected field values are preserved.
 - Exactly **three new omissions** compared with version 2.2: `cards.flavorText`, `tokens.flavorText`, and `cards.isStorySpotlight`. This removes non-gameplay narrative information, not any card-rules, ruling or identity text.
-- Prior `profiles/v2_2.json` and `contracts/07nov-fields.json` are unchanged. The latter is a programming safeguard against accidental field removal, **not** a legal agreement or user permission contract. The converter permits only the three reviewed exceptions in profile 2.3 and checks every other field against v2.2.
+- Profile 2.3 is the **standalone main profile** and CLI default. Its own [`contracts/main-profile-2.3.json`](../contracts/main-profile-2.3.json) locks all 224 selected fields, 20 indexes, the pinned source schema, relationships and identity keys. The active converter **does not load** older profile 2.2 or `contracts/07nov-fields.json` for a 2.3 build.
+- Older `profiles/v2_2.json` and `contracts/07nov-fields.json` remain unchanged solely as historical reference and archived-profile regression safeguards. The 07Nov file is **not** a legal contract, permission statement or requirement to restore `isStorySpotlight`.
 
 ## Tables and exact fields retained
 
