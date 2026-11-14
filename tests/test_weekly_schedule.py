@@ -40,6 +40,8 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('--draft', release)
         self.assertIn('gh release edit', release)
         self.assertIn('--draft=false --latest', release)
+        self.assertIn('MTGJSON_LICENSE.txt', release)
+        self.assertIn('-eq 6', release)
 
     def test_only_changed_approved_packages_are_transferred(self):
         self.assertIn("steps.release_plan.outputs.publish == 'true'", self.workflow)
