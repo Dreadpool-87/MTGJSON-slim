@@ -49,6 +49,11 @@
     .secondary { padding: 10px 4px; text-decoration: none; font-size: 0.94rem; }
     .file-note { min-height: 25px; color: #94a9bf; overflow-wrap: anywhere; margin: 15px 0 0; font-size: 0.8rem; }
     .footnote { margin: 18px 0 0; line-height: 1.5; font-size: 0.87rem; color: #a9b9cd; }
+    .about { margin-top: 30px; padding: 25px 28px; border: 1px solid #34465f; border-radius: 18px; background: rgba(19, 29, 46, 0.8); }
+    .about h2 { margin: 0 0 12px; font-size: 1.4rem; letter-spacing: -0.02em; }
+    .about h3 { margin: 20px 0 7px; font-size: 1.05rem; }
+    .about p { margin: 0 0 12px; color: #becadc; line-height: 1.65; }
+    .about p:last-child { margin-bottom: 0; }
     footer { border-top: 1px solid #ffffff1c; padding: 28px 0 40px; color: #9caec1; font-size: 0.85rem; }
     .footer-inner { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; }
     .credit { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #d7e2f1; }
@@ -81,6 +86,13 @@
       </fieldset>
       <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
       <p class="file-note" id="file-note" aria-live="polite">Release files are hosted on GitHub, not this site.</p>
+    </section>
+    <section class="about" aria-labelledby="why-slim">
+      <h2 id="why-slim">Why MTGJSON-slim?</h2>
+      <p>The official <a href="https://mtgjson.com/">MTGJSON</a> dataset is comprehensive. This slim edition removes less relevant shopping, sealed-product, booster, source deck-list, translation-table and narrative data while preserving verified card and token printings, identities, rules text, multi-face relationships, rulings, legalities and useful search indexes.</p>
+      <h3>Who is it for?</h3>
+      <p>AI agents, deckbuilding tools, collection managers, card-search apps, deck validators and swap advisors that need a smaller, dependable SQLite card-data source. All retained card values come from the verified official source; original non-English printing records remain included.</p>
+      <p><strong>What it is not:</strong> a standalone deckbuilder, AI model, game simulator or complete rules engine. Integrating tools must supply their own deckbuilding and rules logic. <a href="https://github.com/Dreadpool-87/MTGJSON-slim#why-does-a-slim-version-exist">Read more about the data selection and limitations</a>.</p>
     </section>
     <p class="footnote">New verified releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
   </main>
