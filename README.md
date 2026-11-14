@@ -63,7 +63,7 @@ All commands write JSON reports and return nonzero on failure. A protected repor
 
 ## Download formats and selector
 
-The mobile-friendly [MTGJSON-slim download page](https://dreadpool-87.github.io/MTGJSON-slim/) is served from [`docs/index.html`](docs/index.html) using GitHub Pages with branch **main** and folder **/docs**. The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files. No separate site repository or paid hosting is required.
+The mobile-friendly [MTGJSON-slim download page](https://dreadpool-87.github.io/MTGJSON-slim/) is served from [`docs/index.html`](docs/index.html) using GitHub Pages with branch **main** and folder **/docs**. The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files. No separate site repository or paid hosting is required. To review or troubleshoot the existing deployment, open **Settings → Pages**; this is not required for downloading.
 
 When a validated, changed dataset is published, **all four formats** appear in the **same MTGJSON-slim GitHub Release**:
 
