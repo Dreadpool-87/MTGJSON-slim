@@ -7,6 +7,7 @@ on:
       - "scripts/audit_json_sqlite.py"
       - "tests/test_json_sqlite_audit.py"
       - "scripts/inspect_official_sqlite.py"
+      - "scripts/audit_json_field_selection.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,6 +46,15 @@ jobs:
             --archive downloads-json/AllPrintings.json.xz \
             --checksum-path downloads-json/AllPrintings.json.xz.sha256 \
             --output-dir output-json
+      - name: Independent field-selection audit against official JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          json_file=$(python -c 'import json; print(json.load(open("output-json/json-manifest.json"))["output"]["json"]["name"])')
+          python scripts/audit_json_field_selection.py \
+            --source downloads-json/AllPrintings.json.xz \
+            --slim-json "output-json/$json_file" \
+            --report evidence/json-field-selection.json
       - name: Research matching JSON and official SQLite identities (NOT a slim SQLite acceptance)
         run: |
           python scripts/audit_json_sqlite.py \
