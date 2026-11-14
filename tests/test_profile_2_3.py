@@ -6,6 +6,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import slim
@@ -13,15 +14,19 @@ import slim
 ROOT = Path(__file__).resolve().parents[1]
 P22 = json.loads((ROOT / 'profiles/v2_2.json').read_text())
 P23 = json.loads((ROOT / 'profiles/v2_3.json').read_text())
+LOCK = json.loads((ROOT / 'contracts/main-profile-2.3.json').read_text())
 REMOVED = {'cards': {'flavorText', 'isStorySpotlight'}, 'tokens': {'flavorText'}}
 
 
 class ReviewedOmissionTests(unittest.TestCase):
-    def test_exact_differences_and_old_profiles_remain_unchanged(self):
+
+    def test_main_profile_standalone_and_exact_historical_difference(self):
         self.assertEqual(P23['version'], '2.3')
-        self.assertEqual(P23['intentional_omissions'],
-                         {k: sorted(v) for k, v in REMOVED.items()})
-        self.assertEqual(P23['historical_contract'], P22['historical_contract'])
+        self.assertNotIn('historical_contract', P23)
+        self.assertNotIn('intentional_omissions', P23)
+        self.assertEqual(LOCK['profile_version'], '2.3')
+        for key in ('tables', 'indexes', 'relationships', 'unique_keys', 'source_schema'):
+            self.assertEqual(P23[key], LOCK[key])
         self.assertEqual(set(P23['tables']), set(P22['tables']))
         self.assertEqual(sum(map(len, P22['tables'].values())), 227)
         self.assertEqual(sum(map(len, P23['tables'].values())), 224)
@@ -31,8 +36,32 @@ class ReviewedOmissionTests(unittest.TestCase):
         for key in ('source_schema', 'indexes', 'relationships', 'unique_keys'):
             self.assertEqual(P23[key], P22[key])
         self.assertEqual(len(P23['indexes']), 20)
+        self.assertEqual(slim.DEFAULT_PROFILE_PATH, ROOT / 'profiles/v2_3.json')
         self.assertTrue(slim.output_schema(P22))
         self.assertTrue(slim.output_schema(P23))
+
+    def test_main_does_not_read_archived_profile_or_07nov_fields(self):
+        original_read_text = Path.read_text
+
+        def refuse_historical(path, *args, **kwargs):
+            if path.name in ('v2_1.json', 'v2_2.json', '07nov-fields.json'):
+                raise AssertionError('active 2.3 accessed historical baseline')
+            return original_read_text(path, *args, **kwargs)
+
+        with patch.object(Path, 'read_text', refuse_historical):
+            self.assertTrue(slim.check_profile(P23))
+
+    def test_missing_main_lock_fails_closed(self):
+        original_read_text = Path.read_text
+
+        def refuse_main_lock(path, *args, **kwargs):
+            if path.name == 'main-profile-2.3.json':
+                raise FileNotFoundError('simulation: main lock unavailable')
+            return original_read_text(path, *args, **kwargs)
+
+        with patch.object(Path, 'read_text', refuse_main_lock), self.assertRaisesRegex(
+                ValueError, 'main profile 2.3 lock unavailable'):
+            slim.check_profile(P23)
 
     def test_disallowed_extra_drops_fail_closed(self):
         for table, col in [('cards', 'text'), ('cards', 'originalText'),
@@ -42,29 +71,50 @@ class ReviewedOmissionTests(unittest.TestCase):
             bad = copy.deepcopy(P23)
             bad['tables'][table].remove(col)
             with self.subTest(col=f'{table}.{col}'), self.assertRaisesRegex(
-                    ValueError, 'only the three explicitly approved columns'):
+                    ValueError, 'main profile 2.3 differs from locked approved selection'):
                 slim.check_profile(bad)
 
-    def test_omissions_cannot_be_expanded_or_bypassed(self):
-        for mode in ['none', 'wrong', 'baseline', 'old-contract', 'other-version',
-                     'source-pin', 'index']:
-            p = copy.deepcopy(P23)
-            if mode == 'none':
-                p.pop('intentional_omissions')
-            elif mode == 'wrong':
-                p['intentional_omissions']['cards'].append('text')
-            elif mode == 'baseline':
-                p['tables']['cards'].append('flavorText')
+    def test_main_cannot_bypass_lock(self):
+        for mode in ['add-removed-column', 'extra-removal', 'old-contract', 'legacy-exception',
+                     'other-version', 'source-pin', 'index', 'identity', 'relationship']:
+            bad = copy.deepcopy(P23)
+            if mode == 'add-removed-column':
+                bad['tables']['cards'].append('flavorText')
+            elif mode == 'extra-removal':
+                bad['tables']['cards'].remove('printedText')
             elif mode == 'old-contract':
-                p['historical_contract']['cards'].pop('isStorySpotlight')
+                bad['historical_contract'] = P22['historical_contract']
+            elif mode == 'legacy-exception':
+                bad['intentional_omissions'] = {'cards': ['flavorText']}
             elif mode == 'other-version':
-                p['version'] = '2.4'
+                bad['version'] = '2.4'
             elif mode == 'source-pin':
-                p['source_schema'] = p['source_schema'][:-1]
+                bad['source_schema'] = bad['source_schema'][:-1]
             elif mode == 'index':
-                p['indexes'] = p['indexes'][:-1]
+                bad['indexes'] = bad['indexes'][:-1]
+            elif mode == 'identity':
+                bad['unique_keys']['cards'] = 'name'
+            elif mode == 'relationship':
+                bad['relationships'] = bad['relationships'][:-1]
             with self.subTest(mode=mode), self.assertRaises(ValueError):
-                slim.check_profile(p)
+                slim.check_profile(bad)
+
+    def test_main_build_cli_default_does_not_require_profile_argument(self):
+        with tempfile.TemporaryDirectory() as td:
+            report = Path(td) / 'build-report.json'
+            captured = {}
+
+            def fake_build(archive, expected, profile_path, output_dir, tool_commit):
+                captured['profile_path'] = profile_path
+                return {'status': 'PASS'}
+
+            argv = ['slim.py', 'build', '--archive', 'unused.xz', '--sha256', '0'*64,
+                    '--output-dir', str(Path(td)/'output'), '--tool-commit', 'a'*40,
+                    '--report', str(report)]
+            with patch.object(sys, 'argv', argv), patch.object(slim, 'build', fake_build):
+                self.assertEqual(slim.main(), 0)
+            self.assertEqual(captured['profile_path'], str(slim.DEFAULT_PROFILE_PATH))
+            self.assertEqual(json.loads(report.read_text())['status'], 'PASS')
 
     def test_previous_baseline_profile_cannot_remove_story_spotlight(self):
         old = copy.deepcopy(P22)
