@@ -124,6 +124,7 @@ jobs:
         with:
           name: verified-atomic-release-candidate
           path: |
+            output-atomic/*.json.sha256
             output-atomic/*.json.xz
             output-atomic/*.json.xz.sha256
             output-atomic/atomic-manifest.json
