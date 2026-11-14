@@ -15,7 +15,6 @@ from pathlib import Path
 import re
 import sqlite3
 
-import ijson
 
 
 CARD_FIELDS = ("name", "setCode", "number", "layout", "side", "faceName",
@@ -56,6 +55,7 @@ def _scalar(value):
 
 
 def audit(json_package, sqlite_package, report):
+    import ijson  # JSON-only dependency; standard SQLite tests do not need it.
     json_package = Path(json_package)
     sqlite_package = Path(sqlite_package)
     jm = json.loads((json_package / "json-manifest.json").read_text())
