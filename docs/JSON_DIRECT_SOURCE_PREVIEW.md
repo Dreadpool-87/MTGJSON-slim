@@ -59,6 +59,36 @@ The build writes an uncompressed `.json`, lossless `.json.xz`, SHA-256 sidecars 
 the independently filtered source, and both the source SHA and compression roundtrip are checked.
 Nothing is published automatically. The builder refuses to overwrite an existing output folder.
 
+### Additional download packages (after validating the raw JSON)
+
+The official source may be downloaded as `AllPrintings.json.xz` to save bandwidth. It is
+stream-decompressed during projection into `AllPrintings-slim.json`. The verified JSON
+is then independently packaged in XZ, ZIP and Zstandard formats, just as SQLite is
+available in multiple lossless packages. JSON is **never** reconstructed from SQLite.
+
+```bash
+# After the JSON build, with the system zstd executable installed:
+python scripts/package_json_formats.py --package output-json --report json-packaging-proof.json
+```
+
+This creates `.json.zst` (single-thread Zstandard level 9) and `.json.zip`
+(Deflate level 6, exactly one JSON entry), each with its own `.sha256`. The
+script re-verifies the original JSON and XZ against `json-manifest.json`, then
+decompresses both new archives and checks byte-identical JSON SHA-256 hashes.
+It refuses to overwrite existing archives. The original JSON and JSON manifest
+are unchanged; the report records the two additional archive hashes.
+
+A preview of the planned additional download choices is in `docs/index.html`
+on this branch. The live GitHub Pages website remains unchanged until a reviewed
+merge. The JSON links are deliberately **disabled** if no actual verified JSON
+assets appear in the latest public GitHub Release. No release publishing is
+enabled by this draft PR.
+
+**Still required before publication:** a same-source-date JSON/SQLite identity
+audit, an independent review of the retained/omitted deckbuilding fields, and
+a release integration plan that retains source provenance, validates all assets
+before making a Release public, and avoids excessive temporary Actions storage.
+
 ## First full official-source acceptance (14 November 2026)
 
 [GitHub Actions full-source acceptance run #43609135984](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43609135984) completed successfully from the verified upstream archive for MTGJSON `5.3.0+20261114`.
