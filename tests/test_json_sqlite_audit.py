@@ -1,5 +1,6 @@
 """Synthetic, version-pinned positive and negative JSON/SQLite comparison tests."""
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import sqlite3
@@ -15,6 +16,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+@unittest.skipUnless(importlib.util.find_spec("ijson") is not None, "optional ijson dependency not installed")
 class CrossFormatTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cross-format-")
