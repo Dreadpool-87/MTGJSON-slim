@@ -65,7 +65,13 @@ def audit(json_package, sqlite_package, report):
     version_date = (jm["upstream"]["version"], jm["upstream"]["date"])
     sqlite_date = (sm["upstream"]["version"], sm["upstream"]["date"])
     if version_date != sqlite_date:
-        raise ValueError(f"Different upstream versions/dates: JSON {version_date} versus SQLite {sqlite_date}")
+        result = {"status": "BLOCKED_SOURCE_MISMATCH",
+                  "json_upstream": {"version": version_date[0], "date": version_date[1]},
+                  "sqlite_upstream": {"version": sqlite_date[0], "date": sqlite_date[1]},
+                  "reason": "Cannot attribute differences to conversion defects across different official snapshots"}
+        Path(report).parent.mkdir(parents=True, exist_ok=True)
+        Path(report).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+        return result
     raw = _file_from_manifest(json_package, jm["output"]["json"], ".json")
     sqlpath = _file_from_manifest(sqlite_package, sm["output"]["sqlite"], ".sqlite")
     result = {"status": "PASS", "upstream": {"version": version_date[0], "date": version_date[1]},
@@ -198,7 +204,7 @@ def main():
     try:
         result = audit(args.json_package, args.sqlite_package, args.report)
         print(json.dumps(result, sort_keys=True))
-        return 0 if result["status"] == "PASS" else 1
+        return 0 if result["status"] == "PASS" else 2 if result["status"] == "BLOCKED_SOURCE_MISMATCH" else 1
     except (OSError, ValueError, TypeError, KeyError, sqlite3.Error) as exc:
         result = {"status": "FAIL", "error": str(exc), "error_type": type(exc).__name__}
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
