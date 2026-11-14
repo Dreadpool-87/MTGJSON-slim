@@ -1,6 +1,6 @@
 # MTGJSON-slim — current profile 2.2 acceptance
 
-**Status: technical acceptance PASS on the verified MTGJSON `5.3.0+20261113` source.** No dataset Release, scheduled updater or public distribution is enabled. This report documents the current converter/output and its limitations, not comparisons with other slim databases.
+**Historical status: technical acceptance PASS on the verified MTGJSON `5.3.0+20261113` source.** This report documents profile 2.2 as tested at the time; the [current README](../README.md) describes the active profile, scheduler and public Releases.
 
 ## Verified output
 
@@ -50,8 +50,8 @@ These are **sampled warmed-cache results**, not universal performance guarantees
 
 - A first documentation pass enumerated all source/output tables, selected columns, omitted tables/columns and index definitions directly from the committed profile.
 - A second pass checked the published inventory against every profile entry, and compared actual SQLite structure/integrity and source/selected-table counts against the preserved hosted evidence. **Both checks passed**.
-- The project uses [MTGJSON branding rules](https://mtgjson.com/brand-assets/), [MTGJSON license terms](https://mtgjson.com/license/) and [Wizards Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) as distinct inputs to its [third-party notices](../THIRD_PARTY_NOTICES.md). Only text credit, no downloaded logo. **Legal clearance to publish a full derived database has not been established.**
-- The profile pins a specific upstream schema. Schema drift, including changes in omitted source tables, **stops the build for review**. Automatic weekly scheduling, database Releases and consumer integrations require separate decisions and implementation.
+- Source credits, upstream licenses and independent-project status are recorded in [third-party notices](../THIRD_PARTY_NOTICES.md). The project uses text attribution only; it does not bundle third-party branding logos.
+- This version pins a specific upstream schema; schema drift **stops the build for review**. Subsequent scheduler and Release work is documented in the [current README](../README.md).
 - Successful source conversion is **not** proof that every downstream application's size limits, checksum pins or runtime constraints accept this database.
 
-**Decision:** GO for the independent converter and verified current-source output. No automatic authorization to publish, modify other repositories or run weekly releases.
+**Historical acceptance decision:** GO for the independently verified profile 2.2 converter output. This decision is limited to the original testing scope; current operations are documented separately.
