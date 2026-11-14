@@ -1,5 +1,7 @@
 # MTGJSON-slim dataset redistribution review — 2026-11-14
 
+**Operational decision update, 2026-11-14:** The repository maintainer explicitly directed enabling **free public GitHub Releases** of the existing validated slim SQLite/XZ even **without** written rights confirmations. The publication workflow was changed to attempt Releases after validated builds; this is an *owner's technical distribution decision*, **not** a grant or verification of third-party rights. The original review below remains historically accurate as the review's earlier recommendation; no MTGJSON/Wizards/partner permission request was answered and no legal clearance is asserted. Possible takedown, GitHub copyright complaints, suspension of access or legal claims remain risks. The maintainer can disable future releases by setting `PUBLICATION_ENABLED: 'false'` in `.github/workflows/verify.yml` and may need to remove already published assets separately.
+
 **Decision: NOT CLEARED — public dataset Releases remain DISABLED.**
 
 This is a project risk-and-permissions review of the proposed freely downloadable SQLite datasets, not a legal opinion or confirmation of rights. The public converter code remains available. The Tuesday 07:00 Europe/Brussels full rebuild, integrity verification, XZ round-trip verification and JSON-only evidence workflow continue as before. No GitHub Release should be published or rights-approval repository variable enabled on the basis of this document alone.
