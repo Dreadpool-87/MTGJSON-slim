@@ -1,5 +1,6 @@
 """Regression tests for independently sourced, deckbuilding-focused MTGJSON JSON."""
 import hashlib
+import importlib.util
 import json
 import lzma
 from pathlib import Path
@@ -107,6 +108,7 @@ class JsonSelectionTests(unittest.TestCase):
         self.assertEqual(set(source) - set(projected), slim_json.CARD_OMIT & set(source))
 
 
+@unittest.skipUnless(importlib.util.find_spec('ijson') is not None, 'install optional ijson for streaming integration tests')
 class JsonPipelineTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
