@@ -23,7 +23,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
 
   real-data:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' || ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main')
     needs: tests
     permissions:
       contents: read
