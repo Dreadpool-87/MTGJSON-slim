@@ -2,9 +2,9 @@
 
 ## [⬇ Download MTGJSON-slim — Choose your format](https://dreadpool-87.github.io/MTGJSON-slim/)
 
-**Get the latest verified database:** choose **SQLite**, **XZ**, **Zstandard**, or **ZIP** on our mobile-friendly download page. Files are served directly from [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases), with separate SHA-256 checksums. No GitHub account is required to download.
+**Choose your database type and download format** on our mobile-friendly page. SQLite is already published; an independently sourced JSON edition is in the final release-preview stage. Both use XZ, Zstandard, ZIP and raw downloads with per-file SHA-256 checksums when their verified Releases are available. No GitHub account is required to download.
 
-MTGJSON-slim is an independent, unofficial tool that turns the official [MTGJSON](https://mtgjson.com/) **AllPrintings** dataset into a smaller, validated **SQLite card database**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools.
+MTGJSON-slim is an independent, unofficial tool that turns the official [MTGJSON](https://mtgjson.com/) **AllPrintings** datasets into smaller, validated **SQLite and JSON card data**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools.
 
 ## Why does a slim version exist?
 
@@ -23,7 +23,17 @@ MTGJSON-slim removes such less relevant data to reduce download and storage over
 
 **Important limitation:** this project supplies card data, **not** a finished deckbuilder, gameplay simulator, AI model or complete Magic rules engine. Applications using it must still implement their own deck construction, format checks and rules logic. Any legality snapshot is only as current as the underlying MTGJSON release.
 
-**Development preview.** The converter uses Python 3.11+ without pip dependencies. Published databases use versioned [profile 2.3](profiles/v2_3.json) and are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
+**Development preview.** The SQLite converter uses Python 3.11+ without pip dependencies and profile [2.3](profiles/v2_3.json); the independent JSON builder uses an isolated streaming parser. Verified datasets are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
+
+## JSON direct-source release pipeline (publication gated)
+
+A second route in [PR #19](https://github.com/Dreadpool-87/MTGJSON-slim/pull/19) downloads the official `AllPrintings.json.xz`, checks its official MTGJSON checksum, streams its set/card/token records into a reduced `AllPrintings-slim.json` and verifies the exact retained values against its independent source. **JSON is not reconstructed from SQLite.**
+
+JSON downloads use four lossless formats: raw `.json`, `.json.xz`, `.json.zst` and `.json.zip`, each with its own SHA-256 sidecar. A [full same-date acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618066105) compared the 14 November JSON and SQLite independently built from the matching official `5.3.0+20261114` sources: **115,957 cards, 9,565 tokens, all printing UUIDs and checked intersecting gameplay fields matched, with no unexplained differences**. Some token set codes differ by official source representation, verified through `sets.tokenSetCode`. The independent removed-field audit also passed.
+
+**Separate release series:** JSON releases use `json-slim-...` tags, rather than modifying immutable SQLite releases or replacing GitHub's existing latest SQLite release. The download website checks for actual JSON assets and checksums before activating those links. The weekly JSON job is scheduled for Tuesday 07:20 Europe/Brussels, uses a data-only fingerprint so metadata-only changes are not republished, and transfers only the compressed verified JSON (~26 MB in the pinned test) between jobs. **The full read-only release dry-run passed** in [GitHub Actions #43618756802](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618756802). The new JSON publisher is enabled for the default branch after the reviewed PR is merged; no public JSON Release exists until that publishing run succeeds.
+
+See [the complete JSON selection, accepted limitations and release evidence](docs/JSON_DIRECT_SOURCE_PREVIEW.md).
 
 ## Requirements and use
 
@@ -63,7 +73,7 @@ All commands write JSON reports and return nonzero on failure. A protected repor
 
 ## Download formats and selector
 
-The mobile-friendly [MTGJSON-slim download page](https://dreadpool-87.github.io/MTGJSON-slim/) is served from [`docs/index.html`](docs/index.html) using GitHub Pages with branch **main** and folder **/docs**. The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files. No separate site repository or paid hosting is required.
+The mobile-friendly [MTGJSON-slim download page](https://dreadpool-87.github.io/MTGJSON-slim/) is served from [`docs/index.html`](docs/index.html) using GitHub Pages with branch **main** and folder **/docs**. The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files. No separate site repository or paid hosting is required. To review or troubleshoot the existing deployment, open **Settings → Pages**; this is not required for downloading.
 
 When a validated, changed dataset is published, **all four formats** appear in the **same MTGJSON-slim GitHub Release**:
 
@@ -88,7 +98,7 @@ A `.sql` export is a text script for reconstructing a database, not a directly q
 
 ## Current SQLite data profile
 
-The current [profile](profiles/v2_3.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It pins the complete upstream schema observed for MTGJSON `5.3.0+20261113` and **fails closed** if MTGJSON adds, removes or changes its schema. Changes require an explicit profile review rather than silent data loss.
+The current [profile](profiles/v2_3.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It locks the source field names/types and index definitions from MTGJSON `5.3.0+20261113`. It rejects unreviewed additions, removals, type changes and index changes; a fully verified, order-only rearrangement of the existing `sets` columns observed in `5.3.0+20261114` is explicitly permitted. The selected output fields and 20 indexes remain locked.
 
 The output contains **8 tables, 224 columns and 20 explicit indexes**.
 

@@ -1,0 +1,62 @@
+name: JSON slim preview tests
+on:
+  pull_request:
+    paths:
+      - "slim_json.py"
+      - "requirements-json.txt"
+      - "tests/test_json_slim.py"
+      - "scripts/package_json_formats.py"
+      - "tests/test_json_formats.py"
+      - "tests/test_json_release_plan.py"
+      - "tests/test_json_field_selection.py"
+      - "scripts/json_release_plan.py"
+      - "scripts/rehydrate_json.py"
+      - "tests/test_download_site.py"
+      - "docs/index.html"
+      - ".github/workflows/json-preview.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  json-preview-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install isolated JSON streaming dependency
+        run: python -m pip install -r requirements-json.txt
+      - name: Install zstd for JSON ZIP/Zstandard packaging tests
+        run: |
+          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
+      - name: Run source-to-slim JSON regression tests
+        run: python -m unittest discover -s tests -p "test_json_slim.py" -v
+      - name: Run JSON packaging regression tests
+        run: python -m unittest discover -s tests -p "test_json_formats.py" -v
+      - name: Test JSON source-field policy and release fingerprints
+        run: |
+          python -m unittest discover -s tests -p "test_json_field_selection.py" -v
+          python -m unittest discover -s tests -p "test_json_release_plan.py" -v
+      - name: Check download site and HTML script syntax
+        run: |
+          python -m unittest discover -s tests -p "test_download_site.py" -v
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.current = False; self.data = []; self.scripts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'script': self.current = True; self.data = []
+              def handle_data(self, data):
+                  if self.current: self.data.append(data)
+              def handle_endtag(self, tag):
+                  if tag == 'script' and self.current:
+                      self.scripts.append(''.join(self.data)); self.current = False
+          parser = Scripts(); parser.feed(Path('docs/index.html').read_text())
+          assert parser.scripts, 'site contains no script'
+          for i, js in enumerate(parser.scripts): Path(f'/tmp/site-{i}.js').write_text(js)
+          PY
+          for file in /tmp/site-*.js; do node --check "$file"; done

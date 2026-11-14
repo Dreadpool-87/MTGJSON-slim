@@ -49,6 +49,43 @@ def schema(path):
             "WHERE name NOT GLOB 'sqlite_*' ORDER BY type,name")]
 
 
+
+def source_schema_compatible(observed, expected):
+    """Allow only a proven column-order permutation in upstream 'sets' table.
+
+    MTGJSON 5.3.0+20261114 reordered existing sets columns without changing
+    their names/types. Projection always selects by field name; no positions.
+    All other tables, indexes and DDL must still match the pinned source exactly.
+    """
+    if observed == expected:
+        return True
+    if len(observed) != len(expected):
+        return False
+
+    def sets_definitions(ddl):
+        prefix = 'CREATE TABLE "sets" ('
+        if not isinstance(ddl, str) or not ddl.startswith(prefix) or not ddl.endswith(')'):
+            return None
+        defs = ddl[len(prefix):-1].split(', ')
+        # Reject constraints/expressions rather than accepting arbitrary DDL.
+        if not defs or not all(re.fullmatch(r'"[A-Za-z_][A-Za-z0-9_]*" [A-Z][A-Z0-9_]*', x) for x in defs):
+            return None
+        names = [item.split('"', 2)[1] for item in defs]
+        return sorted(defs) if len(set(names)) == len(names) else None
+
+    for actual, pinned in zip(observed, expected):
+        if not isinstance(actual, (list, tuple)) or len(actual) != 4 or actual[:3] != pinned[:3]:
+            return False
+        if actual[3] == pinned[3]:
+            continue
+        if pinned[:2] != ['table', 'sets'] and tuple(pinned[:2]) != ('table', 'sets'):
+            return False
+        norm_actual, norm_expected = sets_definitions(actual[3]), sets_definitions(pinned[3])
+        if norm_actual is None or norm_actual != norm_expected:
+            return False
+    return True
+
+
 def sqlite_affinity(declared_type):
     """SQLite non-STRICT column affinity; no data conversion is performed here."""
     if not isinstance(declared_type, str):
@@ -278,7 +315,7 @@ def validate(path, p, source=None):
     expected = output_schema(p)
     if schema(path) != expected:
         raise ValueError('output schema differs from versioned profile')
-    if source is not None and schema(source) != p['source_schema']:
+    if source is not None and not source_schema_compatible(schema(source), p['source_schema']):
         raise ValueError('source schema differs from versioned profile')
     with closing(connect(path)) as c:
         check_data(c, p)
@@ -318,7 +355,7 @@ def convert(source, output, p):
     source, output = Path(source).resolve(), Path(output).resolve()
     if output.exists() or source == output:
         raise FileExistsError('output already exists; refusing overwrite')
-    if schema(source) != p['source_schema']:
+    if not source_schema_compatible(schema(source), p['source_schema']):
         raise ValueError('source schema differs from versioned profile')
     with closing(connect(source)) as src:
         check_data(src, p)
@@ -396,7 +433,7 @@ def build(archive, expected, profile_path, output_dir, tool_commit):
         source_inventory = inventory(source)
         if source_inventory['integrity_check'] != ['ok']:
             raise ValueError('source integrity_check failed')
-        if source_inventory['schema'] != p['source_schema']:
+        if not source_schema_compatible(source_inventory['schema'], p['source_schema']):
             raise ValueError('source schema differs from versioned profile')
         with closing(connect(source)) as c:
             date, version = c.execute('SELECT date,version FROM meta').fetchone()
