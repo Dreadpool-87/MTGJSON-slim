@@ -58,12 +58,13 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('retention-days: 1', self.workflow)
         self.assertIn('retention-days: 14', self.workflow)
 
-    def test_readme_truthfully_states_release_gate(self):
+    def test_readme_truthfully_describes_published_release_and_attribution(self):
         self.assertIn('Tuesday at 07:00', self.readme)
         self.assertIn('Europe/Brussels', self.readme)
         self.assertIn('PUBLICATION_ENABLED', self.readme)
-        self.assertIn('NOT CLEARED', self.readme)
-        self.assertIn('The first workflow-file push to `main`', self.readme)
+        self.assertIn('## Source and attribution', self.readme)
+        self.assertIn('https://mtgjson.com/license/', self.readme)
+        self.assertIn('The [first public Release]', self.readme)
         self.assertIn('every scheduled run', self.readme)
         self.assertIn('all six assets are present', self.readme)
 
