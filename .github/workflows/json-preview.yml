@@ -7,6 +7,10 @@ on:
       - "tests/test_json_slim.py"
       - "scripts/package_json_formats.py"
       - "tests/test_json_formats.py"
+      - "tests/test_json_release_plan.py"
+      - "tests/test_json_field_selection.py"
+      - "scripts/json_release_plan.py"
+      - "scripts/rehydrate_json.py"
       - "tests/test_download_site.py"
       - "docs/index.html"
       - ".github/workflows/json-preview.yml"
@@ -31,6 +35,10 @@ jobs:
         run: python -m unittest discover -s tests -p "test_json_slim.py" -v
       - name: Run JSON packaging regression tests
         run: python -m unittest discover -s tests -p "test_json_formats.py" -v
+      - name: Test JSON source-field policy and release fingerprints
+        run: |
+          python -m unittest discover -s tests -p "test_json_field_selection.py" -v
+          python -m unittest discover -s tests -p "test_json_release_plan.py" -v
       - name: Check download site and HTML script syntax
         run: |
           python -m unittest discover -s tests -p "test_download_site.py" -v
