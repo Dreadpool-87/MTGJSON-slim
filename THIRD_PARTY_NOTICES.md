@@ -11,7 +11,7 @@ This repository contains independent Python converter code and documentation und
 - Official brand assets and usage conditions: https://mtgjson.com/brand-assets/
 - Upstream project license reference: https://github.com/mtgjson/mtgjson/blob/master/LICENSE.txt
 
-The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to any permitted derivative distribution.
+The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to any permitted derivative distribution. An authorized GitHub Release additionally carries the complete upstream MIT notice as `MTGJSON_LICENSE.txt`.
 
 **Powered by [MTGJSON](https://mtgjson.com/).** This is an independent community project and is **not affiliated with or endorsed by MTGJSON**.
 
@@ -42,8 +42,9 @@ Do **not** assert that the project is definitively “Fan Content permitted unde
 
 At the time of this documentation:
 
-- The repository builds local datasets and uploads **verification reports only** to GitHub Actions; no database files are committed.
-- It does **not** publish database assets in GitHub Releases, does not schedule unattended builds, and has no auto-publish workflow.
+- The repository rebuilds a verified slim SQLite weekly, checks that its lossless XZ copy reproduces the same bytes, and uploads **verification reports only** by default; no database files are committed.
+- The publishing workflow is **inactive by default**. The repository variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED` must be explicitly set to `true` only after the maintainer has documented redistribution rights for the MTGJSON-derived dataset and its third-party content. The variable alone does not grant permission.
+- If authorized, a changed, verified dataset can be published as a draft-first GitHub Release, with the previous stable Release preserved on failure. Without authorization, public release assets are not uploaded.
 - A proposed public Release, mirror or automated distribution needs a **separate rights/licensing review and explicit maintainer authorization**. Assess distribution terms for MTGJSON, Wizards and any other contributors to included material; document the decision and required notices.
 - A source and database SHA-256 prove byte identity, **not** permission to republish, authenticity of all included card facts, or legal compliance.
 
