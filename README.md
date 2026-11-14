@@ -2,7 +2,7 @@
 
 Independent, standard-library Python tooling for creating smaller, verified SQLite datasets from official [MTGJSON](https://mtgjson.com/) downloads.
 
-**Development preview.** Local preparation is implemented. Public dataset distribution is disabled. No automatic or draft Release is created.
+**Development preview.** Local conversion and weekly rebuild are implemented. A validated public Release pipeline exists but is **disabled until redistribution rights are reviewed and the maintainer explicitly enables it**. No dataset is public by default.
 
 ## Requirements and use
 
@@ -38,7 +38,7 @@ python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.2.
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
 
-## Prepared distribution formats (no public Release yet)
+## Prepared distribution formats (public Release requires explicit authorization)
 
 When distribution has been separately cleared and approved, **both** database variants must be available from the **same MTGJSON-slim repository Release**. No second repository is needed:
 
@@ -52,7 +52,7 @@ When distribution has been separately cleared and approved, **both** database va
 
 The converter **already produces both database files locally**. The build now also emits and checks a checksum sidecar for **each** database variant. A compressed file must decompress byte-for-byte to its corresponding `.sqlite`; either file must contain the **same slim projection**: eight retained tables and the explicitly selected fields/indexes. Compression does not determine which data is excluded.
 
-**Distribution is not enabled:** GitHub Actions keeps only JSON evidence; neither database file is currently a public download. A future public Release requires a documented review of MTGJSON/Wizards/third-party data redistribution rights and a separately approved non-publishing-to-publishing workflow change. Do not confuse local package readiness with permission to redistribute the data.
+**Distribution remains disabled by default.** GitHub Actions retains JSON evidence only unless the repository-level variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED` is explicitly set to `true` **after** a documented redistribution-rights review (MTGJSON, Wizards and any other contributors). The variable is a publication gate, not itself proof of legal permission. No second repository is required. With authorization, the workflow transfers the verified SQLite and its lossless XZ copy and publishes both from the same Release; if authorization is absent, neither is uploaded as a public release candidate.
 
 A `.sql` export is a text script for reconstructing a database, not a directly queryable SQLite file. `psql` is the PostgreSQL client and a `.psql` extension is not a universal database container. The project intentionally **does not** add SQL or PostgreSQL exports; they offer no clear benefit for the primary SQLite consumers and would add build/test complexity.
 
@@ -81,7 +81,7 @@ From 20 source tables, the output retains 8 and omits 12. The complete `cardFore
 
 **Verification status:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md).
 
-A weekly GitHub Actions verification is configured for **Tuesday at 07:00 Europe/Brussels**; it becomes active when the workflow change is merged to the default branch. **No public database Release or publication is enabled.**
+The scheduled workflow is configured for **Tuesday at 07:00 Europe/Brussels**. It always builds a fresh verified SQLite and derives the XZ archive from that SQLite. Public release publishing remains disabled until rights approval.
 
 ## Query audit
 
@@ -102,13 +102,15 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 **Weekly schedule:** Every **Tuesday at 07:00** in `Europe/Brussels` (CET/CEST). The [GitHub Actions verification workflow](.github/workflows/verify.yml) uses `cron: '0 7 * * 2'` with a named timezone, not a fixed UTC offset. GitHub can delay the exact start time, and scheduled workflows run only from the default branch. A public repository's scheduled workflows may be disabled by GitHub after 60 days without repository activity; review the workflow status if updates stop.
 
-**What runs:** Pull requests run the fixture tests only. On Tuesday, or when manually dispatched from Actions, the existing workflow runs the fixture tests, then verifies the official MTGJSON archive download and checksum, builds using the pinned profile, and validates the output. An upstream schema change, download/checksum error or failed validation **fails the job**. There is no automatic acceptance of a changed schema.
+**What runs:** On **every scheduled run** (and every manual run on the default branch), the workflow downloads and checksum-verifies the current official MTGJSON archive, rebuilds a fresh slim SQLite from the version-pinned profile, verifies it against the source, creates the XZ copy, checks that decompression reproduces the exact SQLite bytes and checks both SHA-256 sidecars. Pull requests run only the fixture tests. A source schema change, invalid checksum, broken index or relationship or validation failure stops the build; the previous published Release remains unchanged.
 
-**Workload:** A scheduled run has no previous-build input or persistent checked-in baseline. It therefore normally performs **one official download and one complete build per week**, not a daily build. Because MTGJSON's official source SHA-256 can change when build metadata changes, a different checksum does **not** by itself prove important card content changed. An optional **manual** input, `previous_upstream_sha256`, can skip the download/build if the current official SHA-256 matches that supplied digest. Do not claim the scheduled workflow detects semantic card differences or avoids unnecessary builds; those features are not implemented.
+**Change detection:** If public distribution is authorized, the newest successful published Release's manifest is compared with the newly built logical fingerprint. It includes all **retained data tables except the upstream `meta` row**, plus resulting SQL schema and indexes. Therefore an MTGJSON date/version-only change **does not** create another Release. A change in card/printing/ruling/legality/set data or schema/indexes **does**. This is a deliberate logical comparison, not a raw SQLite/XZ byte comparison. Each week is rebuilt and revalidated regardless of whether it is eventually published.
 
-**Outputs and retention:** Only JSON reports, source inventory, validation results and a provenance manifest are retained as a GitHub Actions artifact for **14 days**. The database and compressed database are **not** uploaded, released, committed or published. There is no persistent "latest database" in GitHub created by this workflow; a failed run cannot overwrite one. If long-term version history, semantic change reports, notifications, an automatic retry or distribution are needed, those require separate design and rights review.
+**Safe distribution:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation, meaningful changes and an explicit maintainer rights approval via repository variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED=true`. It rechecks the uploaded package, creates a GitHub **draft Release** with exactly the raw SQLite, XZ, their two checksum files and a manifest, verifies that all five assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
 
-**Security:** The workflow has read-only repository permissions, does not push to `main`, and has no public Release action or dataset artifact. The entire build uses temporary runner storage, with per-ref concurrency and bounded timeouts.
+**Outputs and retention:** Without authorization, only verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**; no database is exposed by the workflow. After approval, a changed verified database is transferred temporarily between jobs with a **1-day** retention and published as GitHub Release assets. The content selection remains slim: the same eight retained tables, 227 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
+
+**Security and limitations:** Scheduled Actions executions may be delayed or disabled by GitHub after prolonged inactivity. The profile intentionally rejects unexpected upstream schema changes; an update requiring a new profile must be reviewed rather than silently dropping fields. This workflow does not independently decide whether redistribution is lawful. No public Release can occur until the maintainer records that decision and enables the variable.
 
 - Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
 - Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
