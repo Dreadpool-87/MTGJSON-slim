@@ -1,8 +1,29 @@
 # MTGJSON-slim
 
-Independent, standard-library Python tooling for creating smaller, verified SQLite datasets from official [MTGJSON](https://mtgjson.com/) downloads.
+## [⬇ Download MTGJSON-slim — Choose your format](https://dreadpool-87.github.io/MTGJSON-slim/)
 
-**Development preview.** Download the verified slim SQLite as raw SQLite, XZ, Zstandard or ZIP from [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases). The converter and database use the versioned [profile 2.3](profiles/v2_3.json).
+**Get the latest verified database:** choose **SQLite**, **XZ**, **Zstandard**, or **ZIP** on our mobile-friendly download page. Files are served directly from [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases), with separate SHA-256 checksums. No GitHub account is required to download.
+
+MTGJSON-slim is an independent, unofficial tool that turns the official [MTGJSON](https://mtgjson.com/) **AllPrintings** dataset into a smaller, validated **SQLite card database**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools.
+
+## Why does a slim version exist?
+
+The full MTGJSON database serves many purposes beyond gameplay and deck construction. A deckbuilder, collection tool or AI agent usually does not need product listings, purchase links, sealed-product and booster information, source deck lists, separate foreign-name translation tables or narrative flavor-text metadata.
+
+MTGJSON-slim removes such less relevant data to reduce download and storage overhead while keeping the information needed to **identify cards accurately and query their gameplay-related properties**. The current [profile 2.3](profiles/v2_3.json) retains **8 tables, 224 columns and 20 explicit lookup indexes**: card and token printings, printed names, mana and rules text, multi-face relationships, Scryfall/Oracle and other identifiers, format legalities, dated rulings, sets and source metadata.
+
+**Slim does not mean guessed or simplified card data.** Retained values come directly from the checksum-verified official source. Original non-English card-printing records are still included; excluding the separate foreign-name translation table is **not** an English-only filter. The conversion validates schema, identities and relationships and stops on unreviewed upstream schema changes instead of silently dropping data. See the [complete retained/omitted field inventory](docs/PROFILE_2_3_DATA_INVENTORY.md).
+
+## What is it for?
+
+- **AI agents and AI-assisted deckbuilders:** look up real card identities, mana costs, rules text, faces and available printings rather than relying on invented card information.
+- **Collection and CSV-based deck tools:** provide a reference database for mapping owned-card entries to verified card and printing identities.
+- **Deck validators and swap advisors:** support card lookup, deck legality checks and card-replacement analysis using recorded format legalities and rulings.
+- **Search tools and integrations:** query names, printed names, sets, UUIDs, Scryfall IDs and Oracle IDs through the retained indexes.
+
+**Important limitation:** this project supplies card data, **not** a finished deckbuilder, gameplay simulator, AI model or complete Magic rules engine. Applications using it must still implement their own deck construction, format checks and rules logic. Any legality snapshot is only as current as the underlying MTGJSON release.
+
+**Development preview.** The converter uses Python 3.11+ without pip dependencies. Published databases use versioned [profile 2.3](profiles/v2_3.json) and are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
 
 ## Requirements and use
 
