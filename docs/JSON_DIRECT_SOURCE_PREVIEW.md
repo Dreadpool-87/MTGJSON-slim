@@ -3,7 +3,7 @@
 **Status: separate preview only.** This branch adds an independent importer of official MTGJSON
 [AllPrintings.json.xz](https://mtgjson.com/api/v5/AllPrintings.json.xz). It deliberately does
 **not** alter the existing SQLite converter, profile 2.3, weekly publishing workflow, live site,
-or public Releases. No full official JSON acceptance run has been completed yet.
+or public Releases. A first full official JSON acceptance run succeeded on GitHub Actions; reproducibility and cross-format comparisons remain separate acceptance gates.
 
 ## Why independently source JSON?
 
@@ -58,6 +58,19 @@ The build writes an uncompressed `.json`, lossless `.json.xz`, SHA-256 sidecars 
 `json-manifest.json`. Source and output are read back and compared **set-by-set** against
 the independently filtered source, and both the source SHA and compression roundtrip are checked.
 Nothing is published automatically. The builder refuses to overwrite an existing output folder.
+
+## First full official-source acceptance (14 November 2026)
+
+[GitHub Actions full-source acceptance run #43609135984](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43609135984) completed successfully from the verified upstream archive for MTGJSON `5.3.0+20261114`.
+
+- Source `AllPrintings.json.xz` SHA-256: `3eacec102b0c7da4dd3fa58e54bfb0b2afe72b3d3a3f64ce0b633dd82babbb2e`
+- Source records preserved: **883 sets**, **115,957 card entries**, **9,565 token entries**
+- Uncompressed JSON: **290,480,106 bytes**; SHA-256 `eaa382d2f30511a64291848d75880c58b0b3979f757cf5e6881ee3198b04cf8e`
+- Compressed JSON XZ: **25,614,036 bytes**; SHA-256 `dd7cd10924a8bc3f1d021616307b45562506cf22619682bf32c8d2cce3a63603`
+- Measured build + full independent source/output comparison + XZ compression/roundtrip: **1:46.69** on one GitHub-hosted Linux runner; max RSS **194,768 KiB** (~190 MiB)
+- Source and output were compared set-by-set after projection. The published SQLite Release was **not** modified.
+
+This is one full real-data build with source-backed validation; it does **not** by itself prove byte-identical reproduction on a second build, completeness of all cross-format fields, or readiness for public Release integration.
 
 ## Acceptance gates before merging or publishing
 
