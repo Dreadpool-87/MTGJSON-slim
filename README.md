@@ -2,7 +2,7 @@
 
 Independent, standard-library Python tooling for creating smaller, verified SQLite datasets from official [MTGJSON](https://mtgjson.com/) downloads.
 
-**Development preview.** The maintainer has explicitly opted to enable public distribution of **validated** slim SQLite and lossless XZ packages. The first Release is not claimed to exist until the GitHub Actions publisher succeeds. The scope of third-party redistribution rights remains unconfirmed; see the distribution warning below.
+**Development preview.** Verified slim SQLite and lossless XZ downloads are available through [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases). The converter and database use the versioned [profile 2.3](profiles/v2_3.json).
 
 ## Requirements and use
 
@@ -40,7 +40,7 @@ python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.3.
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
 
-## Public Release distribution formats (maintainer enabled)
+## Published database formats
 
 When a validated, changed dataset is published, **both** database variants appear on the **same MTGJSON-slim GitHub Release**. No second repository is needed:
 
@@ -51,13 +51,11 @@ When a validated, changed dataset is published, **both** database variants appea
 | `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
 | `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
 | `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
-| `MTGJSON_LICENSE.txt` | Required upstream MIT copyright and license notice when release redistribution is authorized |
+| `MTGJSON_LICENSE.txt` | Upstream MTGJSON copyright and MIT license notice |
 
 The converter **already produces both database files locally**. The build now also emits and checks a checksum sidecar for **each** database variant. A compressed file must decompress byte-for-byte to its corresponding `.sqlite`; either file must contain the **same slim projection**: eight retained tables and the explicitly selected fields/indexes. Compression does not determine which data is excluded.
 
-**Rights warning (2026-11-14): NOT CLEARED.** The maintainer explicitly chose to enable public Release attempts notwithstanding unresolved redistribution questions. This is **not** a legal clearance: MTGJSON's MIT license does not prove rights to all Wizards/partner card texts and rulings, and takedown or other claims remain possible. See [the source-based distribution assessment](docs/DATA_REDISTRIBUTION_REVIEW_2026-11-14.md). No MTGJSON/Wizards written confirmation has been received.
-
-**Public Release publishing is enabled by explicit maintainer instruction, not by a rights determination.** After validation, the workflow compares the retained data and index schema to the newest published Release. It creates and verifies a draft with the six package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
+**Release automation:** After validation, the workflow compares retained data and index definitions to the latest published Release. It creates and verifies a draft with the six package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
 
 A `.sql` export is a text script for reconstructing a database, not a directly queryable SQLite file. `psql` is the PostgreSQL client and a `.psql` extension is not a universal database container. The project intentionally **does not** add SQL or PostgreSQL exports; they offer no clear benefit for the primary SQLite consumers and would add build/test complexity.
 
@@ -67,7 +65,7 @@ The current [profile](profiles/v2_3.json) selects the fields, tables and lookup 
 
 The output contains **8 tables, 224 columns and 20 explicit indexes**.
 
-**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The active 2.3 profile has its own **independent, locked main schema** in [`contracts/main-profile-2.3.json`](contracts/main-profile-2.3.json), covering all 224 selected columns, indexes, source schema and relationships. It **does not depend on** the historical 7 November list or profile 2.2. The historical [`contracts/historical-2026-11-07-field-baseline.json`](contracts/historical-2026-11-07-field-baseline.json) is preserved for archived profile 2.2 and regression checks; it is not a user agreement. Older profile 2.2 remains reproducible. Excluding narrative text does **not** automatically authorize redistribution of the remaining MTG card texts.
+**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The active 2.3 profile has its own **independent, locked main schema** in [`contracts/main-profile-2.3.json`](contracts/main-profile-2.3.json), covering all 224 selected columns, indexes, source schema and relationships. It **does not depend on** the historical 7 November list or profile 2.2. The historical [`contracts/historical-2026-11-07-field-baseline.json`](contracts/historical-2026-11-07-field-baseline.json) is preserved for archived profile 2.2 and regression checks. Older profile 2.2 remains reproducible.
 
 Every selected record, NULL, face relationship, card printing and language is preserved, including printed/original names and rules text. There is no English-only filter or card-type exclusion.
 
@@ -92,7 +90,7 @@ From 20 source tables, the output retains 8 and omits 12. The complete `cardFore
 
 **Historical profile 2.2 verification:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [historical Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md); profile 2.3's independent same-source acceptance is documented above.
 
-The scheduled workflow is configured for **Tuesday at 07:00 Europe/Brussels** and rebuilds a fresh verified SQLite and derives its XZ copy. The first workflow-file push to `main` also triggers a source-backed build and, if it passes, the initial public Release. Subsequent scheduled/manual runs publish only when selected data or indexes change.
+The scheduled workflow is configured for **Tuesday at 07:00 Europe/Brussels** and rebuilds a fresh verified SQLite and derives its XZ copy. The [first public Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/slim-2026-11-13-8fd830df9bd26ec5) was published after a verified full-data build on 14 November 2026. Subsequent scheduled/manual runs publish only when selected data or indexes change.
 
 ## Query audit
 
@@ -117,11 +115,11 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 **Change detection:** The newest successful published Release's manifest is compared with the newly built logical fingerprint. It includes all **retained data tables except the upstream `meta` row**, plus resulting SQL schema and indexes. Therefore an MTGJSON date/version-only change **does not** create another Release. A change in card/printing/ruling/legality/set data or schema/indexes **does**. This is a deliberate logical comparison, not a raw SQLite/XZ byte comparison. Each week is rebuilt and revalidated regardless of whether it is eventually published.
 
-**Verified release flow:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation, meaningful changes and maintainer-enabled public publishing. This does **not** imply that legal redistribution rights have been verified. It rechecks the uploaded package, creates a GitHub **draft Release** with exactly six assets (raw SQLite, XZ, their two checksum files, the manifest and the upstream `MTGJSON_LICENSE.txt`), verifies all six assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
+**Verified release flow:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation and a meaningful data change. It rechecks the uploaded package, creates a GitHub **draft Release** with exactly six assets (raw SQLite, XZ, their two checksum files, the manifest and the upstream `MTGJSON_LICENSE.txt`), verifies all six assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
 
 **Outputs and retention:** A no-change or failed build does not transfer a public database candidate. Verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**. A changed, verified database is transferred between jobs with **1-day** artifact retention and published as GitHub Release assets only after checks pass. The content selection remains slim: the same eight retained tables, 224 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
 
-**Security and limitations:** Scheduled Actions executions may be delayed or disabled by GitHub after prolonged inactivity. The profile intentionally rejects unexpected upstream schema changes; an update requiring a new profile must be reviewed rather than silently dropping fields. This workflow cannot independently decide whether redistribution is lawful. Public distribution was enabled at maintainer direction **without** external written confirmation; follow the third-party notices and respond promptly to any substantiated takedown or licensing issue.
+**Security and limitations:** Scheduled Actions executions may be delayed or disabled by GitHub after prolonged inactivity. The profile intentionally rejects unexpected upstream schema changes; an update requiring a new profile must be reviewed rather than silently dropping fields. For upstream provenance, copyright notices and licensing scope, read [third-party notices](THIRD_PARTY_NOTICES.md).
 
 - Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
 - Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
@@ -129,11 +127,8 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 - Existing directory: use a new versioned output path, or rerun with identical inputs for a fully verified reuse.
 - No space/timeout: provide more temporary disk or time. Failed staging directories are cleaned; source archives remain untouched.
 
-## Attribution and licensing
+## Source and attribution
 
-**Powered by [MTGJSON](https://mtgjson.com/).** Independent community project; not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
+**Powered by [MTGJSON](https://mtgjson.com/).** This is an independent, unofficial community project, not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
 
-The official [MTGJSON brand-assets policy](https://mtgjson.com/brand-assets/) says credit is appreciated but not mandatory. If future maintainers choose its official PNG/SVG logo, it **must not be altered or used to imply endorsement**. The repository currently uses text credit only, no downloaded logos. Read the [MTGJSON license](https://mtgjson.com/license/) and our detailed [third-party, brand, and distribution notices](THIRD_PARTY_NOTICES.md).
-
-The MIT [LICENSE](LICENSE) covers our original project code and documentation; it is not blanket permission to republish Wizards of the Coast card text, artwork or all other third-party data. See the official [Wizards Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). Public database release automation needs a separate, recorded rights review and explicit authorization.
-
+The converter uses the official MTGJSON `AllPrintings` dataset; its source version and checksums are recorded in each Release manifest. The repository's [MIT license](LICENSE) covers our own converter code. Upstream copyright and other data rights remain with their respective owners. See the [MTGJSON license](https://mtgjson.com/license/), the bundled [MTGJSON MIT notice](MTGJSON_LICENSE.txt) and our [third-party notices](THIRD_PARTY_NOTICES.md).
