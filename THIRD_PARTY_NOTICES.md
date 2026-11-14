@@ -38,7 +38,7 @@ Suggested project status statement: **“MTGJSON-slim is an independent, unoffic
 
 Do **not** assert that the project is definitively “Fan Content permitted under the Fan Content Policy” without first establishing that the specific proposed distribution qualifies. Preserve applicable original notices and check the current policies before publication.
 
-## Public database distribution is deliberately disabled
+**2026-11-14 rights review outcome: NOT CLEARED.** Read [the documented source review, approval criteria and unsent permission inquiries](docs/DATA_REDISTRIBUTION_REVIEW_2026-11-14.md). Keep the public-release approval variable disabled until the required written clarifications are received and evaluated.\n\n## Public database distribution is deliberately disabled
 
 At the time of this documentation:
 
