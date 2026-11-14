@@ -6,6 +6,7 @@ on:
       - ".github/workflows/json-weekly.yml"
       - "scripts/json_release_plan.py"
       - "scripts/rehydrate_json.py"
+      - "scripts/zstd_support.py"
   push:
     branches: [main]
     paths:
@@ -26,11 +27,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install JSON dependency and zstd
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
+      - name: Install JSON streaming dependency
         run: |
           python -m pip install -r requirements-json.txt
-          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - run: python scripts/run_regression_tests.py
   real-data:
     if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
@@ -46,7 +48,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - run: python -m pip install -r requirements-json.txt
       - name: Retrieve independently verified official SQLite and JSON archives
         run: |
@@ -135,7 +139,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - run: python -m pip install -r requirements-json.txt
       - uses: actions/download-artifact@v4
         with:
@@ -146,7 +152,6 @@ jobs:
       - name: Create and validate Zstandard and ZIP packages
         run: |
           set -euo pipefail
-          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
           python scripts/package_json_formats.py --package candidate --report json-extra-formats.json
       - name: Create draft, verify ten assets, publish without replacing SQLite latest
         shell: bash

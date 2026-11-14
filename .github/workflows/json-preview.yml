@@ -6,6 +6,8 @@ on:
       - "requirements-json.txt"
       - "tests/test_json_slim.py"
       - "scripts/package_json_formats.py"
+      - "scripts/zstd_support.py"
+      - "tests/test_zstd_support.py"
       - "tests/test_json_formats.py"
       - "tests/test_json_release_plan.py"
       - "tests/test_json_field_selection.py"
@@ -25,12 +27,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - name: Install isolated JSON streaming dependency
         run: python -m pip install -r requirements-json.txt
-      - name: Install zstd for JSON ZIP/Zstandard packaging tests
-        run: |
-          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - name: Run source-to-slim JSON regression tests
         run: python -m unittest discover -s tests -p "test_json_slim.py" -v
       - name: Run JSON packaging regression tests

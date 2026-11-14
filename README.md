@@ -37,9 +37,9 @@ See [the complete JSON selection, accepted limitations and release evidence](doc
 
 ## Requirements and use
 
-For the **SQLite converter**: Python 3.11+ on Linux, SQLite (bundled with Python), and sufficient disk space for source, temporary files and output; no pip dependencies. For either **JSON builder**, install `python -m pip install -r requirements-json.txt`. Packaging ZIP/Zstandard additionally needs the system `zstd` command.
+For the **SQLite converter**: Python 3.11+ on Linux, SQLite (bundled with Python), and sufficient disk space for source, temporary files and output; no pip dependencies. For either **JSON builder**, install `python -m pip install -r requirements-json.txt`. All GitHub workflows use **Python 3.14** and explicitly check that its optional standard-library `compression.zstd` module is available. Zstandard packaging and verification then run directly in Python without installing a separate `zstd` executable or Python package. On older local Python versions, the same packaging tools retain the system `zstd` CLI fallback.
 
-For the **complete regression gate**, install the JSON requirements and have both `zstd` and Node.js available, then run `python scripts/run_regression_tests.py`. This executes the entire suite, including the website JavaScript controls, and returns nonzero for failed, skipped or undiscovered tests. Every PR runs this gate, including auditor-only changes. All three weekly workflows use it; the SQLite converter itself remains stdlib-only.
+For the **complete regression gate**, install the JSON requirements, have Node.js available and provide either Python 3.14 with `compression.zstd` or the legacy `zstd` executable, then run `python scripts/run_regression_tests.py`. This executes the entire suite, including the website JavaScript controls, and returns nonzero for failed, skipped or undiscovered tests. Every PR runs this gate, including auditor-only changes. All three weekly workflows use it; the SQLite converter itself remains stdlib-only.
 
 Run from a clean checkout at the exact tool commit recorded in the manifest:
 
@@ -94,7 +94,9 @@ When a validated, changed dataset is published, **all four formats** appear in t
 | `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
 | `MTGJSON_LICENSE.txt` | Upstream MTGJSON copyright and MIT license notice |
 
-The core converter builds the authoritative `.sqlite` and `.sqlite.xz`. The GitHub release job adds `.sqlite.zst` and `.sqlite.zip` **only after** the original candidate is validated, so temporary Actions artifact storage is not multiplied. Each download has a separate SHA-256 sidecar; XZ, Zstandard and ZIP are checked to unpack to the **exact same SQLite bytes**. The ZIP contains exactly one `.sqlite` file. Compression does not alter the selected eight tables, 224 columns or indexes. The converter itself still needs no Python packages; the publisher uses the system `zstd` CLI.
+The core converter builds the authoritative `.sqlite` and `.sqlite.xz`. The GitHub release job adds `.sqlite.zst` and `.sqlite.zip` **only after** the original candidate is validated, so temporary Actions artifact storage is not multiplied. Each download has a separate SHA-256 sidecar; XZ, Zstandard and ZIP are checked to unpack to the **exact same SQLite bytes**. The ZIP contains exactly one `.sqlite` file. Compression does not alter the selected eight tables, 224 columns or indexes. The converter itself still needs no Python packages; the publisher uses Python 3.14's native Zstandard module.
+
+All three download families share the same streaming Zstandard helper: level 9, a frame checksum and a single-thread configuration. It prefers native Python support and verifies the complete decompressed SHA-256 before trusting an archive. Native and CLI archives can differ in compressed bytes, size and checksum because framing or library versions differ; they must still unpack to the identical original SQLite/JSON bytes. Existing Release files are not recompressed or overwritten when the workflow runtime is upgraded.
 
 **Release automation:** After validation, the workflow compares retained data and index definitions to the latest published Release. It creates and verifies a draft with the ten package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
 

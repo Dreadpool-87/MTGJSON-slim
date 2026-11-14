@@ -2,7 +2,8 @@
 
 The authoritative JSON and XZ are built/validated by slim_json.py.  This module
 only adds lossless archives from those exact JSON bytes, without changing the
-source, JSON schema, or existing manifest.  Requires the system zstd executable.
+source, JSON schema, or existing manifest. Uses native Python 3.14 Zstandard,
+with a system zstd fallback on older runtimes.
 """
 from __future__ import annotations
 
@@ -13,9 +14,12 @@ import lzma
 from pathlib import Path
 import re
 import shutil
-import subprocess
+import sys
 import tempfile
 import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts import zstd_support
 
 
 def file_hash(path):
@@ -76,13 +80,7 @@ def verify_extra(folder, base, digest):
         if (folder / (path.name + ".sha256")).read_text(encoding="ascii") != f"{checksum}  {path.name}\n":
             raise ValueError(f"{kind} checksum sidecar differs")
         if kind == "zstd":
-            if not shutil.which("zstd"):
-                raise RuntimeError("system zstd CLI is required")
-            with subprocess.Popen(["zstd", "-d", "-q", "-c", str(path)],
-                                  stdout=subprocess.PIPE) as process:
-                unpacked_hash = stream_hash(process.stdout)
-                if process.wait() != 0:
-                    raise ValueError("Zstandard decompression failed")
+            unpacked_hash = zstd_support.decompressed_sha256(path)
         else:
             with zipfile.ZipFile(path, "r") as archive:
                 if archive.namelist() != [base.name]:
@@ -102,12 +100,12 @@ def prepare(folder):
     targets = [folder / (base.name + suffix) for suffix in (".zst", ".zip")]
     if any(p.exists() or Path(str(p) + ".sha256").exists() for p in targets):
         raise FileExistsError("refusing to overwrite existing JSON archives")
-    if not shutil.which("zstd"):
-        raise RuntimeError("system zstd CLI is required")
+    if not zstd_support.available():
+        raise RuntimeError("Python native Zstandard support or the system zstd CLI is required")
     with tempfile.TemporaryDirectory(prefix=".json-extra-", dir=folder) as temp:
         stage = Path(temp)
         zst, zipped = (stage / p.name for p in targets)
-        subprocess.run(["zstd", "-9", "-T1", "-q", "-o", str(zst), str(base)], check=True)
+        zstd_support.compress_file(base, zst)
         with zipfile.ZipFile(zipped, "w", compression=zipfile.ZIP_DEFLATED,
                              compresslevel=6, allowZip64=True) as archive:
             entry = zipfile.ZipInfo(base.name, date_time=(1980, 1, 1, 0, 0, 0))

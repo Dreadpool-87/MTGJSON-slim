@@ -15,7 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - name: Install isolated JSON streaming parser
         run: python -m pip install -r requirements-json.txt
       - name: Retrieve checksum-verified MTGJSON AllPrintings JSON
@@ -50,9 +52,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v zstd >/dev/null 2>&1; then
-            sudo apt-get update -qq && sudo apt-get install -y zstd
-          fi
           /usr/bin/time -v python scripts/package_json_formats.py \
             --package output-json --report json-extra-verification.json
           python - <<'PY'

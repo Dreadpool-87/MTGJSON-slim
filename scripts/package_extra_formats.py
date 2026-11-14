@@ -1,7 +1,7 @@
 """Create verified ZIP and Zstandard downloads from a validated SQLite package.
 
 Only run after the main SQLite/XZ package has passed its own checks. This script
-uses Python's standard library plus the system `zstd` CLI (no Python packages).
+uses Python 3.14's native Zstandard support, or the CLI on older runtimes.
 """
 import argparse
 import hashlib
@@ -10,8 +10,11 @@ from pathlib import Path
 import re
 import shutil
 import sqlite3
-import subprocess
+import sys
 import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts import zstd_support
 
 
 def sha256(path):
@@ -27,12 +30,7 @@ def contents_sha256(stream):
 
 
 def zstd_content_sha256(path):
-    with subprocess.Popen(['zstd', '-d', '-q', '-c', str(path)],
-                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as process:
-        value = contents_sha256(process.stdout)
-        if process.wait() != 0:
-            raise ValueError('Zstandard decompression failed')
-        return value
+    return zstd_support.decompressed_sha256(path)
 
 
 def prepare(package):
@@ -58,13 +56,12 @@ def prepare(package):
     targets = [zst, zip_path]
     if any(p.exists() or Path(str(p) + '.sha256').exists() for p in targets):
         raise FileExistsError('refusing to overwrite an existing compressed asset')
-    if shutil.which('zstd') is None:
-        raise RuntimeError('system zstd CLI is required')
+    if not zstd_support.available():
+        raise RuntimeError('Python native Zstandard support or the system zstd CLI is required')
 
     try:
         # Single-thread, fixed level for repeatable output in a given runtime.
-        subprocess.run(['zstd', '-9', '-T1', '-q', '-o', str(zst), str(db_path)],
-                       check=True)
+        zstd_support.compress_file(db_path, zst)
         if zstd_content_sha256(zst) != expected_sha:
             raise ValueError('Zstandard output differs from SQLite')
 
