@@ -1,0 +1,195 @@
+name: Verified AtomicCards B1 weekly releases
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/atomic-weekly.yml'
+      - 'atomic_slim.py'
+      - 'contracts/atomic-b1.json'
+      - 'scripts/audit_atomic_source.py'
+      - 'scripts/package_atomic_formats.py'
+      - 'scripts/atomic_release_plan.py'
+      - 'tests/test_atomic_slim.py'
+      - 'docs/index.html'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/atomic-weekly.yml'
+      - 'atomic_slim.py'
+      - 'contracts/atomic-b1.json'
+      - 'scripts/audit_atomic_source.py'
+      - 'scripts/package_atomic_formats.py'
+      - 'scripts/atomic_release_plan.py'
+  schedule:
+    - cron: '40 7 * * 2'
+      timezone: 'Europe/Brussels'
+permissions:
+  contents: read
+concurrency:
+  group: mtgjson-atomic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install JSON parser
+        run: python -m pip install -r requirements-json.txt
+      - name: Run all existing and new regression tests
+        run: python -m unittest discover -s tests -v
+
+  real-data:
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-json.txt
+      - name: Download and SHA-256 verify official AtomicCards
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python atomic_slim.py download --directory downloads-atomic
+      - name: Build AtomicCards B1 from official AtomicCards JSON
+        run: |
+          set -euo pipefail
+          python atomic_slim.py build \
+            --archive downloads-atomic/AtomicCards.json.xz \
+            --checksum-path downloads-atomic/AtomicCards.json.xz.sha256 \
+            --output-dir output-atomic
+      - name: Independently audit every retained nested value
+        run: |
+          set -euo pipefail
+          raw=$(python -c 'import json;print(json.load(open("output-atomic/atomic-manifest.json"))["output"]["json"]["name"])')
+          python scripts/audit_atomic_source.py \
+            --source downloads-atomic/AtomicCards.json.xz \
+            --checksum-path downloads-atomic/AtomicCards.json.xz.sha256 \
+            --raw "output-atomic/$raw" \
+            --package output-atomic \
+            --report evidence/atomic-full-retention.json \
+            --mark-verified
+          python atomic_slim.py verify --package output-atomic
+      - name: Plan release only when verified Atomic content changes
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATOMIC_PUBLICATION_ENABLED: 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          latest=$(gh release list --limit 1000 --json tagName,isDraft \
+            --jq '[.[] | select(.isDraft == false and (.tagName | startswith("atomic-slim-")))] | .[0].tagName // ""')
+          args=(--package output-atomic --report evidence/atomic-release-plan.json)
+          if [[ -n "$latest" ]]; then
+            gh release download "$latest" --pattern atomic-manifest.json --dir previous
+            test -f previous/atomic-manifest.json
+            args+=(--previous previous/atomic-manifest.json)
+          fi
+          if [[ "$ATOMIC_PUBLICATION_ENABLED" == "true" ]]; then args+=(--enabled); fi
+          python scripts/atomic_release_plan.py "${args[@]}"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          p = json.load(open("evidence/atomic-release-plan.json", encoding="utf-8"))
+          print("publish=" + str(p["action"] == "PUBLISH").lower())
+          print("tag=" + p["tag"])
+          PY
+      - name: Retain only compact Atomic validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atomic-release-evidence
+          path: |
+            evidence/*.json
+            output-atomic/atomic-manifest.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Transfer only verified XZ when changed
+        if: steps.plan.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-atomic-release-candidate
+          path: |
+            output-atomic/*.json.xz
+            output-atomic/*.json.xz.sha256
+            output-atomic/atomic-manifest.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    if: github.ref == 'refs/heads/main' && needs.real-data.outputs.publish == 'true'
+    needs: real-data
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-json.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-atomic-release-candidate
+          path: candidate
+      - name: Rehydrate and reverify independently audited JSON
+        run: python atomic_slim.py rehydrate --package candidate
+      - name: Package and decompress-test Zstandard and ZIP
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y zstd
+          fi
+          python scripts/package_atomic_formats.py --package candidate --report atomic-formats.json
+      - name: Publish verified ten-asset draft without touching other Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.real-data.outputs.tag }}
+        run: |
+          set -euo pipefail
+          name=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["output"]["json"]["name"])')
+          date=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["upstream"]["date"])')
+          fp=$(python -c 'import json;print(json.load(open("candidate/atomic-manifest.json"))["data_sha256"][:16])')
+          test "$RELEASE_TAG" = "atomic-slim-$date-$fp"
+          files=("candidate/$name" "candidate/$name.sha256"
+                 "candidate/$name.xz" "candidate/$name.xz.sha256"
+                 "candidate/$name.zst" "candidate/$name.zst.sha256"
+                 "candidate/$name.zip" "candidate/$name.zip.sha256"
+                 "candidate/atomic-manifest.json" "MTGJSON_LICENSE.txt")
+          for item in "${files[@]}"; do test -s "$item"; done
+          cat > atomic-release-notes.md <<'EOF'
+          AtomicCards-slim B1 — independently verified deckbuilding-focused AtomicCards JSON.
+          - Directly derived from the official AtomicCards.json source.
+          - Removes only purchaseUrls and two fully equivalent deprecated mana aliases.
+          - Preserves all card-name groups, card records, translations, rules, legalities and relationships.
+          - The independent full-source audit must pass before publication.
+          - Raw JSON, XZ, Zstandard and ZIP are byte-identical after decompression.
+          - Four individual SHA-256 sidecars, versioned manifest and MTGJSON license.
+          - AtomicCards is NOT a substitute for printing-level or token-level AllPrintings.
+          - Independent unofficial project, powered by MTGJSON (https://mtgjson.com/).
+          EOF
+          gh release create "$RELEASE_TAG" "${files[@]}" \
+            --target "$GITHUB_SHA" --title "MTGJSON-slim AtomicCards B1 — $date" \
+            --notes-file atomic-release-notes.md --draft --latest=false
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > atomic-assets.txt
+          for item in "${files[@]}"; do grep -Fx "$(basename "$item")" atomic-assets.txt >/dev/null; done
+          [[ $(wc -l < atomic-assets.txt) -eq 10 ]]
+          gh release edit "$RELEASE_TAG" --draft=false --latest=false
