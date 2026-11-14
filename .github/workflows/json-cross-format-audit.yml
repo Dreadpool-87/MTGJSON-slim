@@ -6,6 +6,7 @@ on:
       - ".github/workflows/json-cross-format-audit.yml"
       - "scripts/audit_json_sqlite.py"
       - "tests/test_json_sqlite_audit.py"
+      - "scripts/inspect_official_sqlite.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,15 +28,15 @@ jobs:
           mkdir -p evidence
           python slim.py download --directory downloads-sqlite --report evidence/sqlite-source-download.json
           python slim_json.py download --directory downloads-json
-      - name: Build and verify slim SQLite independently from official SQLite
+      - name: Inspect verified official SQLite and report schema drift without changing profile 2.3
         shell: bash
         run: |
           set -euo pipefail
-          /usr/bin/time -v python slim.py build \
+          /usr/bin/time -v python scripts/inspect_official_sqlite.py \
             --archive downloads-sqlite/AllPrintings.sqlite.xz \
-            --sha256 "$(cat downloads-sqlite/AllPrintings.sqlite.xz.sha256)" \
-            --profile profiles/v2_3.json --output-dir output-sqlite \
-            --tool-commit "$GITHUB_SHA" --report evidence/sqlite-source-build.json
+            --checksum downloads-sqlite/AllPrintings.sqlite.xz.sha256 \
+            --profile profiles/v2_3.json --output-dir output-official-sqlite \
+            --report evidence/official-sqlite-schema.json
       - name: Build and verify slim JSON independently from official JSON
         shell: bash
         run: |
@@ -44,10 +45,10 @@ jobs:
             --archive downloads-json/AllPrintings.json.xz \
             --checksum-path downloads-json/AllPrintings.json.xz.sha256 \
             --output-dir output-json
-      - name: Compare only if JSON and SQLite source date/version match
+      - name: Research matching JSON and official SQLite identities (NOT a slim SQLite acceptance)
         run: |
           python scripts/audit_json_sqlite.py \
-            --json-package output-json --sqlite-package output-sqlite \
+            --json-package output-json --sqlite-package output-official-sqlite \
             --report evidence/json-sqlite-cross-format.json
       - name: Retain evidence only, never publish data candidates
         if: always()
@@ -57,7 +58,6 @@ jobs:
           path: |
             evidence/*.json
             output-json/json-manifest.json
-            output-sqlite/manifest.json
-            output-sqlite/validation.json
+            output-official-sqlite/manifest.json
           if-no-files-found: warn
           retention-days: 14
