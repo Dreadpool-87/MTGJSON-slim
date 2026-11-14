@@ -57,6 +57,7 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('Europe/Brussels', self.readme)
         self.assertIn('MTGJSON_PUBLIC_DISTRIBUTION_APPROVED', self.readme)
         self.assertIn('every scheduled run', self.readme)
+        self.assertIn('all six assets are present', self.readme)
 
 
 if __name__ == '__main__':
