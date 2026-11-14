@@ -8,8 +8,8 @@ This is a project risk-and-permissions review of the proposed freely downloadabl
 
 - Source: MTGJSON official `AllPrintings.sqlite.xz`, with its matching official SHA-256.
 - Product: a newly generated, verified **slim SQLite**, and **one losslessly compressed XZ copy of that exact same SQLite**. Not the complete unfiltered upstream database.
-- Current profile: `profiles/v2_2.json`; **8 tables, 227 selected columns and 20 explicit indexes**. Profile and source schema are pinned and fail closed on unexpected changes.
-- Includes essentially the complete selected per-printing gameplay and descriptive data, including card and token names, rules/Oracle/printed/original text, rulings, flavor text, legalities, set metadata, relationships, artist/printing metadata, EDHREC rank/saltiness and identifiers for Scryfall and commercial partners.
+- Current proposed profile: `profiles/v2_3.json`; **8 tables, 224 selected columns and 20 explicit indexes**. Profile and source schema are pinned and fail closed on unexpected changes.
+- Includes essentially the complete selected per-printing gameplay and descriptive data, including card and token names, rules/Oracle/printed/original text, rulings, printed/original card text and legalities, set metadata, relationships, artist/printing metadata, EDHREC rank/saltiness and identifiers for Scryfall and commercial partners.
 - Does not contain embedded card artwork or purchased card images. Commercial pricing, foreign translation table `cardForeignData`, booster, sealed-product and deck-list tables are omitted. Non-English physical-printing records are **not** filtered out.
 - Proposed distribution: unrestricted, free, automatic **public GitHub Releases**, containing raw `.sqlite`, identical `.sqlite.xz`, their checksums, manifest and original applicable notices, potentially every week when retained data or indexes actually change. The database may be consumed by third-party applications and AI agents.
 - The repository code's MIT license and the upstream MTGJSON MIT notice **do not independently prove rights to every piece of included third-party data**.
@@ -28,13 +28,19 @@ This is a project risk-and-permissions review of the proposed freely downloadabl
 | --- | --- | --- |
 | Our own conversion source code | Independently authored software under this repository's MIT license | **Can remain public** |
 | MTGJSON aggregation and metadata | MTGJSON publishes a MIT license for website/content, with an attribution/notice requirement | **Positive, but insufficient alone** |
-| Wizards card texts, rulings, flavor and other original expression | The proposed dataset retains extensive original text. Wizards' Fan Content Policy does not unambiguously authorize bulk verbatim republication simply because the files are free | **Unresolved; seek explicit written clarification/authorization** |
+| Wizards card texts, rulings and other original expression | The proposed dataset retains extensive original text. Wizards' Fan Content Policy does not unambiguously authorize bulk verbatim republication simply because the files are free | **Unresolved; seek explicit written clarification/authorization** |
 | Third-party partner data | External identifiers, ranks/metrics, artist/printing fields and selected metadata can have mixed provenance; source-per-field rights are not documented for this release | **Unresolved; require MTGJSON provenance/permission clarification, then provider review where necessary** |
 | Card art/images | No image binaries are redistributed | **Lower risk than image mirroring; not a substitute for the other permissions** |
 | Weekly rebuild and ZIP/XZ packaging | Technical method and validation do not grant legal authorization | **Keep running, with publication disabled** |
 | Public Release workflow | Created and gated, but the actual public upload/publish path has not been live-executed | **No live publishing claim** |
 
 **Not an affirmative clearance:** The facts that MTGJSON itself provides an official public SQLite download, that the project adds indexes/removes fields, or that the GitHub release would be free do **not** on their own establish that a third party may mirror a near-complete selection of card texts and related data.
+
+## Profile 2.3 clarification (14 November 2026)
+
+The maintainer explicitly decided to omit `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight` in profile 2.3. The original 2.2 reference and 07nov preservation safeguard remain intact. Both profiles were built from the same checksum-verified source and compared field by field: [GitHub Actions acceptance run #43570579132](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43570579132). All retained rows and values were identical.
+
+The proposed public dataset **no longer contains these two narrative flavor-text columns or the story spotlight flag**, but still includes Oracle/gameplay card text, original and printed rule text, rulings, and other third-party data. **The public distribution decision remains NOT CLEARED.** This selective removal does not resolve the bulk republication question.
 
 ## Decision and release gate
 
@@ -43,7 +49,7 @@ This is a project risk-and-permissions review of the proposed freely downloadabl
 Leave `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED` **absent or disabled**. Do not set it to `true` until:
 
 1. The project maintainer has obtained and retained an explicit, attributable written response from MTGJSON about redistribution of a freely published derived `AllPrintings.sqlite` subset, including applicable downstream/partner licensing obligations and required notices.
-2. Wizards has confirmed that the described bulk distribution of complete selected card/rules/flavor text falls within a permission applicable to this exact use, or provides written authorization; **no reply is not consent**.
+2. Wizards has confirmed that the described bulk distribution of complete selected card/rules/printed text falls within a permission applicable to this exact use, or provides written authorization; **no reply is not consent**.
 3. Any additional providers whose licensed materials remain in the selected fields are identified and their redistribution requirements resolved, with permission or a reviewed exclusion. Don't silently remove gameplay-critical information just to bypass this gate.
 4. The response/authorization scope, applicable terms, conditions, permitted contents and any revocation requirements are recorded in this repository and independently checked against the actual profile fields.
 5. Maintainer explicitly decides to enable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED=true` only after those conditions. Perform a separately observed first publish/asset-download acceptance test; do not claim that publication was already proven.
@@ -56,12 +62,12 @@ If the answers are negative or unclear, keep the code and tools public and let u
 
 Hello MTGJSON maintainers,
 
-I'm developing an independent, free, open-source converter at https://github.com/Dreadpool-87/MTGJSON-slim . It downloads the official, checksum-verified `AllPrintings.sqlite.xz`, builds a smaller offline SQLite (currently eight tables and 227 selected columns with additional indexes), and provides an identical lossless XZ copy. The project targets Magic deckbuilders, validators and AI tooling. It contains card names and Oracle/printed text, rulings, legalities, flavor/printing metadata, artist references, EDHREC metrics and external IDs. It does not distribute card images or pricing tables.
+I'm developing an independent, free, open-source converter at https://github.com/Dreadpool-87/MTGJSON-slim . It downloads the official, checksum-verified `AllPrintings.sqlite.xz`, builds a smaller offline SQLite (currently eight tables and 224 selected columns with additional indexes), and provides an identical lossless XZ copy. The project targets Magic deckbuilders, validators and AI tooling. It contains card names and Oracle/printed text, rulings, legalities, alternative card names and printing metadata, artist references, EDHREC metrics and external IDs. It does not distribute card images or pricing tables.
 
 The converter itself is open source, and builds are verified weekly. Before offering the derived SQLite and XZ files as **free public GitHub Release downloads**, could you please confirm in writing:
 
 1. Is public redistribution of such a transformed/filtered MTGJSON dataset covered by your project's MIT terms, subject to carrying your copyright and license notice?
-2. Are any included fields supplied under partner terms that prohibit onward public bulk redistribution, especially card/rules/flavor text, Scryfall-derived records, EDHREC metrics, IDs or printing/artist metadata?
+2. Are any included fields supplied under partner terms that prohibit onward public bulk redistribution, especially card/rules/printed text, Scryfall-derived records, EDHREC metrics, IDs or printing/artist metadata?
 3. What credits, licenses, disclaimers or source links must accompany the released files, and do you recommend excluding any specific fields?
 4. Do you know of a further permission process required by Wizards of the Coast or other upstream rightsholders?
 
@@ -77,7 +83,7 @@ Hello Wizards of the Coast team,
 
 I'm maintaining an independent, unofficial, noncommercial Magic: The Gathering community tool: https://github.com/Dreadpool-87/MTGJSON-slim . The project converts the publicly downloadable MTGJSON AllPrintings database into a smaller offline SQLite file for deckbuilders and card validators. It would offer both an uncompressed SQLite and a lossless XZ copy through free public GitHub Releases, without registration or paywalls. There are no card-image binaries and no sale of the dataset.
 
-The database would still contain selected full card/Oracle/printed rules text, card names, rulings, flavor text, printing/set information, format legalities and identifiers, across many cards and printings. We understand that your Fan Content Policy supports many noncommercial fan creations but does not automatically cover verbatim republication of Wizards IP. We are not treating that policy as prior authorization.
+The database would still contain selected full card/Oracle/printed rules text, card names, rulings, original and printed rule text, printing/set information, format legalities and identifiers, across many cards and printings. We understand that your Fan Content Policy supports many noncommercial fan creations but does not automatically cover verbatim republication of Wizards IP. We are not treating that policy as prior authorization.
 
 Could you confirm in writing whether **bulk public redistribution of this described derived card-data database** is permitted under an existing Wizards policy, or whether specific written permission is necessary? If it is permitted, please specify the scope and required credit/disclaimer; if not, please identify any acceptable alternative (for example, distributing only the converter so users fetch source data themselves).
 
@@ -89,6 +95,6 @@ We will not enable public dataset releases without clarity. Thank you.
 
 - Research date: 2026-11-14 (public policies viewed on this date).
 - Reviewer: ChatGPT (AI-assisted technical and permissions review; not legal counsel).
-- Project profile: `profiles/v2_2.json`.
+- Project profile: `profiles/v2_3.json` (formerly `profiles/v2_2.json`; only three narrative columns removed).
 - No permission responses have been received, no outbound inquiries have been sent, and no public dataset Release has been created by this review.
 - Reassess after receiving attributable written answers or if source fields, sources, policies, or desired distribution scope change.
