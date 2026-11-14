@@ -119,15 +119,77 @@ The ZIP contains exactly one JSON file; ZIP and Zstandard both unpacked to raw J
 
 **No public JSON Release was created.** Cross-format semantic acceptance and approval of the public publishing integration are still pending.
 
+## Same-date JSON / SQLite acceptance and field policy (14 November 2026)
+
+The first comparison was correctly blocked when the existing SQLite Release was dated
+13 November and the JSON source was dated 14 November. The subsequent
+[full same-date audit #43618066105](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618066105)
+downloaded **both** official sources with their own upstream checksums and built both
+slim outputs from MTGJSON `5.3.0+20261114`.
+
+- **PASS:** all 115,957 card-printing UUIDs and 9,565 token UUIDs matched.
+- **PASS:** checked overlapping fields, identifiers (including Scryfall/Oracle), mana,
+  names, rules text, dated rulings and legalities; zero unexplained mismatches.
+- **PASS:** 883 sets preserved and independent source-vs-slim-JSON field audit found
+  zero altered retained fields and zero unapproved removals.
+- **Source-shape nuance:** JSON embeds tokens under parent sets (e.g. `10E`), while
+  SQLite uses the token set code (e.g. `T10E`). Previously there were 2,997 such
+  differences. They are now accepted **only** if the official
+  `sets.tokenSetCode` value proves the relationship. The corrected full audit
+  reported zero mismatches.
+- **SQLite source schema drift:** the 14 November official SQLite reordered
+  existing `sets` columns without adding/removing/changing their names or types.
+  The code on this branch allows **only** that proven `sets`-column permutation;
+  unknown field/type/index changes still fail closed. The full validated SQLite
+  build succeeded using this compatibility rule; locked selected profile 2.3
+  fields and output schema remained unchanged.
+
+**Field-selection decision:** the approved removals concern purchasing, sealed
+products, booster packaging, source deck lists, foreign-language translation
+side tables, narrative flavor text and story metadata. For deck construction,
+the actual card-printing records, printed/alternative names, identities,
+mana, rules, rulings, legalities and multi-face relationships remain. The
+`foreignData`/set-translation omission does reduce support for searching
+cards by translated alternative names, and booster/deck-list omissions limit
+draft/stock-deck analysis. Those omissions are deliberate, but applications
+which need those functions should use official MTGJSON.
+
+This comparison checks the documented intersecting fields, not strict equality
+of the two format-specific schemas, and cannot substitute for a complete
+Magic: The Gathering rules engine.
+
+## Release and site architecture
+
+JSON uses **separate versioned Releases** named `json-slim-<date>-<data-fingerprint>`
+rather than modifying existing, immutable SQLite releases. This allows JSON-only
+changes to publish without duplicating SQLite assets, and leaves GitHub's
+`/releases/latest` for SQLite. The download website detects published JSON
+Releases separately and displays the four JSON formats and checksum links only
+when the assets really exist. The site source is staged in the draft PR; the
+public site does not change until merge.
+
+The new JSON release planner uses a data-only fingerprint, excluding upstream
+`meta.date` and `meta.version`: daily metadata-only rebuilds must not create
+new downloads. The weekly JSON pipeline is timed for Tuesday 07:20
+Europe/Brussels, after the SQLite job's scheduled start. Only verified XZ plus
+small metadata is passed between Actions jobs (~26 MB in the pinned test);
+the publication job reconstructs and rechecks raw JSON before generating ZIP
+and Zstandard. Public upload is draft-first and enabled **only** after all
+checks pass. No independent JSON public Release is created by fixture tests.
+
+**Publication remains disabled** via `JSON_PUBLICATION_ENABLED: 'false'` in
+the proposed new workflow, pending a successful end-to-end read-only release
+dry-run and final merge decision.
+
 ## Acceptance gates before merging or publishing
 
 1. **PASS** — Official full `AllPrintings.json.xz` download and checksum verification.
 2. **PASS** — Full builder, independent source/output per-set comparison, counts, hashes, sizes, and memory/time measurements.
 3. **PASS** — Two byte-identical complete builds in one runner from the same verified archive.
 4. **PASS** — Full-data Zstandard/ZIP packaging, exact roundtrip hashes and per-file checksums.
-5. **PENDING** — Cross-check printing UUIDs, multi-face relationships, Oracle IDs and legalities against a same-date validated SQLite output, allowing for different schemas.
-6. **PENDING** — Independent review of excluded fields for deckbuilding/AI consumers.
-7. **PENDING** — Separately approve Release/website integration without doubling temporary GitHub Actions artifact storage.
+5. **PASS** — Same-date printing UUIDs, source-backed token-set relationships, Oracle IDs, rules, rulings and legalities compared against validated SQLite: 0 unexplained differences.
+6. **PASS WITH LIMITATIONS** — Source-vs-output field-loss audit and explicit deckbuilding omission policy; alternate-language search and draft/stock-deck analysis are deliberately out of scope.
+7. **IN PROGRESS** — New separate JSON Release pipeline and website support are staged. Full read-only end-to-end dry-run required before enabling publication/merging.
 
 MTGJSON remains the upstream data source. This is an independent unofficial derivative,
 not an endorsement or official MTGJSON alternative.
