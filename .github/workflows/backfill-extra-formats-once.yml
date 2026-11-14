@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      GH_TOKEN: \${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: slim-2026-11-13-8fd830df9bd26ec5
     steps:
       - uses: actions/checkout@v4
