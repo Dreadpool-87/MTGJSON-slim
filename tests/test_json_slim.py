@@ -95,10 +95,10 @@ class JsonSelectionTests(unittest.TestCase):
         self.assertEqual(result["cards"][0]["language"], "German")
 
     def test_missing_identity_and_malformed_sets_fail(self):
-        card = sample_source()["data"]["M19"]["cards"][0]
-        card.pop("uuid")
+        fixture = sample_source()
+        fixture["data"]["M19"]["cards"][0].pop("uuid")
         with self.assertRaises(ValueError):
-            slim_json.project_set("M19", sample_source()["data"]["M19"])
+            slim_json.project_set("M19", fixture["data"]["M19"])
         with self.assertRaises(ValueError):
             slim_json.project_set("BAD", sample_source()["data"]["LEA"])
 
