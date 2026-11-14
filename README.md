@@ -25,6 +25,14 @@ MTGJSON-slim removes such less relevant data to reduce download and storage over
 
 **Development preview.** The converter uses Python 3.11+ without pip dependencies. Published databases use versioned [profile 2.3](profiles/v2_3.json) and are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
 
+## JSON direct-source preview (not yet published)
+
+A second route is being developed in [draft PR #19](https://github.com/Dreadpool-87/MTGJSON-slim/pull/19). It downloads official `AllPrintings.json.xz` with its MTGJSON checksum, streams the original JSON into an independently filtered `AllPrintings-slim.json`, and validates every retained set, card and token. **JSON is not generated from SQLite.**
+
+The expected user downloads are `.json`, `.json.xz`, `.json.zst` and `.json.zip`, each with SHA-256 sidecars. XZ, ZIP and Zstandard must all unpack to the same verified JSON bytes. The [site source](docs/index.html) includes a JSON download area, but actual download links are enabled only after verified assets appear in a public Release. Until then, the live download page continues to offer SQLite.
+
+The full JSON conversion has passed official-source and same-runtime reproducibility tests; [JSON preview and outstanding acceptance gates](docs/JSON_DIRECT_SOURCE_PREVIEW.md) describe the remaining cross-format data audit and release work. Do not interpret the preview as a public JSON Release.
+
 ## Requirements and use
 
 Python 3.11+ on Linux, SQLite (bundled with Python), sufficient local disk space for the source, temporary files and output. No pip dependencies. Run from a clean checkout at the exact tool commit recorded in the manifest:
