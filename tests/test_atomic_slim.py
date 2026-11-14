@@ -176,6 +176,7 @@ class AtomicSlimTests(unittest.TestCase):
         self.assertIn("scripts/audit_atomic_source.py", workflow)
         self.assertIn("atomic-manifest.json", workflow)
         self.assertIn("name: verified-atomic-release-candidate", workflow)
+        self.assertIn("output-atomic/*.json.sha256", workflow)
 
     @unittest.skipUnless(shutil.which("zstd"), "zstd CLI not available")
     @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
