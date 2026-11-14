@@ -49,6 +49,7 @@ When distribution has been separately cleared and approved, **both** database va
 | `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
 | `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
 | `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
+| `MTGJSON_LICENSE.txt` | Required upstream MIT copyright and license notice when release redistribution is authorized |
 
 The converter **already produces both database files locally**. The build now also emits and checks a checksum sidecar for **each** database variant. A compressed file must decompress byte-for-byte to its corresponding `.sqlite`; either file must contain the **same slim projection**: eight retained tables and the explicitly selected fields/indexes. Compression does not determine which data is excluded.
 
