@@ -1,0 +1,24 @@
+name: JSON slim preview tests
+on:
+  pull_request:
+    paths:
+      - "slim_json.py"
+      - "requirements-json.txt"
+      - "tests/test_json_slim.py"
+      - ".github/workflows/json-preview.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  json-preview-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install isolated JSON streaming dependency
+        run: python -m pip install -r requirements-json.txt
+      - name: Run JSON fixture regression tests
+        run: python -m unittest discover -s tests -p "test_json_slim.py" -v
