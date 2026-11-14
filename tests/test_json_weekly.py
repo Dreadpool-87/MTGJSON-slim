@@ -12,9 +12,16 @@ class JsonWeeklyWorkflowTests(unittest.TestCase):
     def setUpClass(cls):
         cls.source = WORKFLOW.read_text()
 
-    def test_schedule_is_separate_from_sqlite_and_local_time(self):
-        self.assertIn("cron: '20 7 * * 2'", self.source)
-        self.assertIn("timezone: 'Europe/Brussels'", self.source)
+    def test_follows_successful_trusted_main_sqlite_workflow_not_clock_delay(self):
+        self.assertIn('  workflow_run:', self.source)
+        self.assertIn('workflows: ["Verify MTGJSON slim"]', self.source)
+        self.assertIn('types: [completed]', self.source)
+        self.assertIn('branches: [main]', self.source)
+        self.assertNotIn("cron: '20 7 * * 2'", self.source)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", self.source)
+        self.assertIn("github.event.workflow_run.head_branch == 'main'", self.source)
+        self.assertIn("github.event.workflow_run.head_repository.full_name == github.repository", self.source)
+        self.assertIn("github.event.workflow_run.event == 'schedule'", self.source)
         self.assertIn("mtgjson-slim-json-", self.source)
 
     def test_no_publication_on_pr_and_write_only_publish_job(self):
@@ -33,6 +40,17 @@ class JsonWeeklyWorkflowTests(unittest.TestCase):
         self.assertIn("python scripts/audit_json_sqlite.py", self.source)
         self.assertIn("python scripts/json_release_plan.py", self.source)
         self.assertIn("json-manifest.json", self.source)
+
+    def test_validated_published_sqlite_required_twice(self):
+        self.assertIn("Require already published, matching, validated SQLite Release", self.source)
+        self.assertIn("Recheck published SQLite dependency immediately before JSON publishing", self.source)
+        self.assertEqual(self.source.count("scripts/require_published_sqlite.py \\"), 4)
+        self.assertIn("output-json/sqlite-manifest.json", self.source)
+        self.assertIn("candidate/sqlite-manifest.json", self.source)
+        self.assertIn("evidence/sqlite-publication-gate.json", self.source)
+        self.assertIn("sqlite-release-publish-gate.json", self.source)
+        self.assertIn("gh release download", self.source)
+        self.assertIn("sqlite-public/release.json", self.source)
 
     def test_only_small_compressed_candidate_transferred(self):
         after = self.source.split("Transfer only compressed JSON when approved and changed", 1)[1]
