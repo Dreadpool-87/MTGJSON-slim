@@ -42,8 +42,9 @@ Do **not** assert that the project is definitively “Fan Content permitted unde
 
 At the time of this documentation:
 
-- The repository builds local datasets and uploads **verification reports only** to GitHub Actions; no database files are committed.
-- It does **not** publish database assets in GitHub Releases, does not schedule unattended builds, and has no auto-publish workflow.
+- The repository rebuilds a verified slim SQLite weekly, checks that its lossless XZ copy reproduces the same bytes, and uploads **verification reports only** by default; no database files are committed.
+- The publishing workflow is **inactive by default**. The repository variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED` must be explicitly set to `true` only after the maintainer has documented redistribution rights for the MTGJSON-derived dataset and its third-party content. The variable alone does not grant permission.
+- If authorized, a changed, verified dataset can be published as a draft-first GitHub Release, with the previous stable Release preserved on failure. Without authorization, public release assets are not uploaded.
 - A proposed public Release, mirror or automated distribution needs a **separate rights/licensing review and explicit maintainer authorization**. Assess distribution terms for MTGJSON, Wizards and any other contributors to included material; document the decision and required notices.
 - A source and database SHA-256 prove byte identity, **not** permission to republish, authenticity of all included card facts, or legal compliance.
 
