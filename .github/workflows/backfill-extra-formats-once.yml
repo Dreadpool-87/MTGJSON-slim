@@ -1,0 +1,94 @@
+name: Add ZIP and Zstandard to existing Release (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/backfill-extra-formats-once.yml'
+permissions:
+  contents: read
+jobs:
+  add-formats:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: \${{ github.token }}
+      RELEASE_TAG: slim-2026-11-13-8fd830df9bd26ec5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify target Release is mutable and still has six original assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release-before.json
+          python - <<'PY'
+          import json, os
+          release = json.load(open('release-before.json'))
+          assert release['tag_name'] == os.environ['RELEASE_TAG']
+          assert release['draft'] is False and release.get('immutable') is not True
+          names = [asset['name'] for asset in release['assets']]
+          assert len(names) == 6, f'expected exactly six existing assets; got {names}'
+          assert 'manifest.json' in names and 'MTGJSON_LICENSE.txt' in names
+          assert sum(name.endswith('.sqlite') for name in names) == 1
+          assert sum(name.endswith('.sqlite.xz') for name in names) == 1
+          assert all(not name.endswith(('.sqlite.zip', '.sqlite.zst')) for name in names)
+          PY
+      - name: Retrieve the already-published verified SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          gh release download "$RELEASE_TAG" \
+            --pattern 'manifest.json' --pattern '*.sqlite' \
+            --pattern '*.sqlite.sha256' --dir candidate
+          db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
+          test -s "candidate/$db"
+          test -s "candidate/$db.sha256"
+          python slim.py validate --database "candidate/$db" \
+            --profile profiles/v2_3.json --report initial-validation.json
+      - name: Create and verify ZIP and Zstandard from that exact SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y zstd
+          fi
+          python scripts/package_extra_formats.py --package candidate --report extra-formats-verification.json
+      - name: Append four verified assets, without touching the six originals
+        shell: bash
+        run: |
+          set -euo pipefail
+          db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
+          gh release upload "$RELEASE_TAG" \
+            "candidate/$db.zst" "candidate/$db.zst.sha256" \
+            "candidate/$db.zip" "candidate/$db.zip.sha256"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release-after.json
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          before = json.load(open('release-before.json'))
+          after = json.load(open('release-after.json'))
+          old = {item['name']: item for item in before['assets']}
+          new = {item['name']: item for item in after['assets']}
+          assert not after['draft'] and after['tag_name'] == before['tag_name']
+          assert len(old) == 6 and len(new) == 10
+          for name, entry in old.items():
+              assert name in new and new[name]['size'] == entry['size']
+              assert new[name].get('digest') == entry.get('digest'), f'existing asset changed: {name}'
+          manifest = json.loads(Path('candidate/manifest.json').read_text())
+          db_name = manifest['output']['sqlite']['name']
+          for ext in ('zst', 'zip'):
+              for suffix in (f'.{ext}', f'.{ext}.sha256'):
+                  name = db_name + suffix
+                  item = new[name]
+                  local = Path('candidate') / name
+                  with local.open('rb') as stream:
+                      digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+                  assert item['size'] == local.stat().st_size and item.get('digest') == 'sha256:' + digest
+          print('PASS: original six assets unchanged; ZIP/Zstandard + checksums uploaded and verified')
+          PY
