@@ -46,6 +46,25 @@ jobs:
               assert first["output"][kind]["sha256"] == repeat["output"][kind]["sha256"]
           print("SECOND_BUILD_BYTE_IDENTICAL_PASS")
           PY
+      - name: Generate ZIP and Zstandard from validated full slim JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y zstd
+          fi
+          /usr/bin/time -v python scripts/package_json_formats.py \
+            --package output-json --report json-extra-verification.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("json-extra-verification.json").read_text())
+          manifest = json.loads(Path("output-json/json-manifest.json").read_text())
+          assert set(report) == {"zip", "zstd"}
+          assert all(item["unpacked_sha256"] == manifest["output"]["json"]["sha256"]
+                     for item in report.values())
+          print("FULL_JSON_ZIP_ZSTD_ROUNDTRIP_PASS")
+          PY
       - name: Record independent summary
         run: |
           python - <<'PY'
@@ -66,5 +85,6 @@ jobs:
           path: |
             output-json/json-manifest.json
             output-json/*.sha256
+            json-extra-verification.json
           if-no-files-found: warn
           retention-days: 14
