@@ -182,14 +182,16 @@
           if (!release || !Array.isArray(release.assets) || release.draft) throw new Error('No published assets');
           for (const [key, suffix] of Object.entries(suffixes)) {
             const asset = release.assets.find(item => item.name.endsWith(suffix) && safeUrl(item));
-            if (asset) {
+            const sidecar = asset && release.assets.find(item =>
+              item.name === asset.name + '.sha256' && safeUrl(item));
+            if (asset && sidecar) {
               assets[key] = asset;
-              assets[key + '-sha'] = release.assets.find(item => item.name === asset.name + '.sha256' && safeUrl(item));
+              assets[key + '-sha'] = sidecar;
             }
             const input = inputs.find(item => item.value === key);
-            input.disabled = !asset;
+            input.disabled = !(asset && sidecar);
             const size = document.getElementById('size-' + key);
-            size.textContent = asset ? formatBytes(asset.size) : 'Not available';
+            size.textContent = asset && sidecar ? formatBytes(asset.size) : 'Not available';
           }
           if (!currentInput()) {
             const first = inputs.find(input => !input.disabled);

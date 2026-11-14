@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -35,11 +36,20 @@ def check_manifest(m):
     return m
 
 
+def release_tag(manifest):
+    """Use the same content+contract identity that controls publication."""
+    check_manifest(manifest)
+    identity = json.dumps([manifest['data_sha256'], manifest['contract_sha256']],
+                          separators=(',', ':')).encode('ascii')
+    suffix = hashlib.sha256(identity).hexdigest()[:16]
+    return f"atomic-slim-{manifest['upstream']['date']}-{suffix}"
+
+
 def decide(current, previous, enabled):
     check_manifest(current)
     if previous is not None:
         check_manifest(previous)
-    tag = f"atomic-slim-{current['upstream']['date']}-{current['data_sha256'][:16]}"
+    tag = release_tag(current)
     if not enabled:
         action, reason = "BLOCKED", "Publishing disabled"
     elif previous is None:

@@ -1,6 +1,7 @@
 """Static download-site checks without a browser or external dependencies."""
 from html.parser import HTMLParser
 from pathlib import Path
+import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,11 @@ class Inputs(HTMLParser):
 
 
 class DownloadSiteTests(unittest.TestCase):
+    def test_sqlite_selector_behaviour_with_incomplete_releases(self):
+        result = subprocess.run(['node', '--test', str(ROOT / 'tests/test_download_site_behavior.js')],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     @classmethod
     def setUpClass(cls):
         cls.html = SITE.read_text(encoding='utf-8')
@@ -52,7 +58,7 @@ class DownloadSiteTests(unittest.TestCase):
     def test_fallback_for_missing_release_or_rate_limit(self):
         self.assertIn("Unable to load GitHub release details", self.html)
         self.assertIn('Open latest Release', self.html)
-        self.assertIn("input.disabled = !asset", self.html)
+        # Availability is exercised against incomplete releases by the JavaScript behavior test.
 
 
     def test_json_downloads_are_optional_and_verified(self):

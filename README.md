@@ -2,9 +2,9 @@
 
 ## [⬇ Download MTGJSON-slim — Choose your format](https://dreadpool-87.github.io/MTGJSON-slim/)
 
-**Choose your database type and download format** on our mobile-friendly page. SQLite is already published; an independently sourced JSON edition is in the final release-preview stage. Both use XZ, Zstandard, ZIP and raw downloads with per-file SHA-256 checksums when their verified Releases are available. No GitHub account is required to download.
+**Choose among three published download families:** indexed **AllPrintings SQLite**, printing-level **AllPrintings JSON**, and card-name/Oracle-oriented **AtomicCards JSON**. Each has raw, XZ, Zstandard and ZIP downloads with per-file SHA-256 checksums. The [download page](https://dreadpool-87.github.io/MTGJSON-slim/) selects real published assets and enables a format only when its matching checksum sidecar is available. No GitHub account is required to download.
 
-MTGJSON-slim is an independent, unofficial tool that turns the official [MTGJSON](https://mtgjson.com/) **AllPrintings** datasets into smaller, validated **SQLite and JSON card data**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools.
+MTGJSON-slim is an independent, unofficial tool that turns official [MTGJSON](https://mtgjson.com/) **AllPrintings and AtomicCards** sources into smaller, validated **SQLite and JSON card data**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools. AtomicCards complements the printing-level downloads; it does not replace them or provide a standalone token database.
 
 ## Why does a slim version exist?
 
@@ -23,21 +23,25 @@ MTGJSON-slim removes such less relevant data to reduce download and storage over
 
 **Important limitation:** this project supplies card data, **not** a finished deckbuilder, gameplay simulator, AI model or complete Magic rules engine. Applications using it must still implement their own deck construction, format checks and rules logic. Any legality snapshot is only as current as the underlying MTGJSON release.
 
-**Development preview.** The SQLite converter uses Python 3.11+ without pip dependencies and profile [2.3](profiles/v2_3.json); the independent JSON builder uses an isolated streaming parser. Verified datasets are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
+The SQLite converter uses Python 3.11+ without pip dependencies and profile [2.3](profiles/v2_3.json). The independent AllPrintings JSON and AtomicCards builders use the pinned streaming parser in `requirements-json.txt`. Verified datasets are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
 
-## JSON direct-source release pipeline (publication gated)
+## Published JSON direct-source release pipeline
 
-A second route in [PR #19](https://github.com/Dreadpool-87/MTGJSON-slim/pull/19) downloads the official `AllPrintings.json.xz`, checks its official MTGJSON checksum, streams its set/card/token records into a reduced `AllPrintings-slim.json` and verifies the exact retained values against its independent source. **JSON is not reconstructed from SQLite.**
+The AllPrintings JSON route downloads the official `AllPrintings.json.xz`, checks its official MTGJSON checksum, streams its set/card/token records into a reduced `AllPrintings-slim.json` and verifies the exact retained values against its independent source. **JSON is not reconstructed from SQLite.**
 
 JSON downloads use four lossless formats: raw `.json`, `.json.xz`, `.json.zst` and `.json.zip`, each with its own SHA-256 sidecar. A [full same-date acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618066105) compared the 14 November JSON and SQLite independently built from the matching official `5.3.0+20261114` sources: **115,957 cards, 9,565 tokens, all printing UUIDs and checked intersecting gameplay fields matched, with no unexplained differences**. Some token set codes differ by official source representation, verified through `sets.tokenSetCode`. The independent removed-field audit also passed.
 
-**Separate release series:** JSON releases use `json-slim-...` tags, rather than modifying immutable SQLite releases or replacing GitHub's existing latest SQLite release. The download website checks for actual JSON assets and checksums before activating those links. The weekly JSON job is scheduled for Tuesday 07:20 Europe/Brussels, uses a data-only fingerprint so metadata-only changes are not republished, and transfers only the compressed verified JSON (~26 MB in the pinned test) between jobs. **The full read-only release dry-run passed** in [GitHub Actions #43618756802](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618756802). The new JSON publisher is enabled for the default branch after the reviewed PR is merged; no public JSON Release exists until that publishing run succeeds.
+**Separate release series:** JSON releases use `json-slim-...` tags, rather than modifying immutable SQLite releases or replacing GitHub's existing latest SQLite release. The download website checks for actual JSON assets and checksums before activating those links. The weekly JSON job is scheduled for Tuesday 07:20 Europe/Brussels, uses a data-only fingerprint so metadata-only changes are not republished, and transfers only the compressed verified JSON (~26 MB in the pinned test) between jobs. [The successful public build and publication run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43619556887) produced the [14 November JSON Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/json-slim-2026-11-14-f0248315f9343a2f). Source acceptance, selected same-date cross-format checks and all four lossless formats passed; this does not imply full JSON/SQLite information parity.
 
 See [the complete JSON selection, accepted limitations and release evidence](docs/JSON_DIRECT_SOURCE_PREVIEW.md).
 
 ## Requirements and use
 
-Python 3.11+ on Linux, SQLite (bundled with Python), sufficient local disk space for the source, temporary files and output. No pip dependencies. Run from a clean checkout at the exact tool commit recorded in the manifest:
+For the **SQLite converter**: Python 3.11+ on Linux, SQLite (bundled with Python), and sufficient disk space for source, temporary files and output; no pip dependencies. For either **JSON builder**, install `python -m pip install -r requirements-json.txt`. Packaging ZIP/Zstandard additionally needs the system `zstd` command.
+
+For the **complete regression gate**, install the JSON requirements and have both `zstd` and Node.js available, then run `python scripts/run_regression_tests.py`. This executes the entire suite, including the website JavaScript controls, and returns nonzero for failed, skipped or undiscovered tests. Every PR runs this gate, including auditor-only changes. All three weekly workflows use it; the SQLite converter itself remains stdlib-only.
+
+Run from a clean checkout at the exact tool commit recorded in the manifest:
 
 ```bash
 python -m unittest discover -s tests -v
@@ -200,6 +204,12 @@ The third, separate GitHub Release series (tags starting with **atomic-slim-**) 
 | MTGJSON_LICENSE.txt | Original upstream copyright/license |
 
 The [Atomic weekly workflow](.github/workflows/atomic-weekly.yml) verifies the official downloaded SHA-256, builds a versioned profile, performs independent full-source retention verification, and decompresses all formats to confirm identical raw JSON bytes. Draft publication is allowed only after verification, without replacing the existing SQLite latest Release or the AllPrintings JSON series. Release candidates are not committed to git.
+
+AtomicCards is scheduled for Tuesday **07:40 Europe/Brussels**, after SQLite at **07:00** and AllPrintings JSON at **07:20**. All times follow Belgian daylight saving time; GitHub may delay scheduled runs. The [first successful Atomic publication](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43644365215) produced the [14 November Atomic B1 Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/atomic-slim-2026-11-14-44832732ccf261a8). A successful push build is not proof of a future timer execution.
+
+The Atomic builder and its independent auditor separately require exactly one root `meta` object and one root `data` object. Unknown, missing or repeated root fields block publication rather than disappearing during projection. Existing reviewed card/nested-field contracts remain enforced.
+
+New Atomic tag suffixes fingerprint **both retained data and the profile contract**, matching the release decision. A same-date contract-only change therefore cannot reuse the old data-only tag. Existing data-only Releases and manifests remain readable and unchanged; identical retained data and contract still produce `SKIP_UNCHANGED` even if upstream metadata or packaging changes.
 
 This is data for external AI deckbuilding tools, not a game rules engine, token database, printing resolver or proof that an app can ingest the entire JSON file.
 

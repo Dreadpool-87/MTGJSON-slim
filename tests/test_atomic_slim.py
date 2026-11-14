@@ -168,6 +168,77 @@ class AtomicSlimTests(unittest.TestCase):
         self.assertIn("checksumLink.href = sidecar.browser_download_url", site)
         self.assertIn("link.removeAttribute('aria-disabled')", site)
 
+    @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
+    def test_builder_rejects_unreviewed_root_information(self):
+        self.prepare()
+        self.original['rulesMetadata'] = {'newRule': 'must not disappear'}
+        with lzma.open(self.archive, 'wb') as stream:
+            stream.write(json.dumps(self.original).encode())
+        self.sidecar.write_text(atomic_slim.hash_file(self.archive) + '\n')
+        with patch.object(atomic_slim, 'CONTRACT', self.contract_file):
+            with self.assertRaisesRegex(ValueError, 'root'):
+                atomic_slim.build(self.archive, self.sidecar, self.output)
+
+    @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
+    def test_builder_rejects_duplicate_root_metadata(self):
+        self.prepare()
+        duplicate = json.dumps(self.original)[:-1] + ',"meta":' + json.dumps(self.original['meta']) + '}'
+        with lzma.open(self.archive, 'wb') as stream:
+            stream.write(duplicate.encode())
+        self.sidecar.write_text(atomic_slim.hash_file(self.archive) + '\n')
+        with patch.object(atomic_slim, 'CONTRACT', self.contract_file):
+            with self.assertRaisesRegex(ValueError, 'root'):
+                atomic_slim.build(self.archive, self.sidecar, self.output)
+
+    @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
+    def test_independent_auditor_rejects_unapproved_source_root(self):
+        self.prepare()
+        with patch.object(atomic_slim, 'CONTRACT', self.contract_file):
+            atomic_slim.build(self.archive, self.sidecar, self.output)
+        manifest_path = self.output / atomic_slim.MANIFEST
+        manifest = json.loads(manifest_path.read_text())
+        self.original['rulesMetadata'] = {'newRule': 'must not disappear'}
+        with lzma.open(self.archive, 'wb') as stream:
+            stream.write(json.dumps(self.original).encode())
+        self.sidecar.write_text(atomic_slim.hash_file(self.archive) + '\n')
+        manifest['upstream']['sha256_xz'] = atomic_slim.hash_file(self.archive)
+        manifest_path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, 'root'):
+            independent.audit(self.archive, self.sidecar,
+                              self.output / manifest['output']['json']['name'], self.output,
+                              self.root / 'audit.json', mark_verified=True)
+        self.assertFalse(json.loads(manifest_path.read_text())['verified'])
+
+    @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
+    def test_independent_auditor_rejects_fabricated_output_root(self):
+        self.prepare()
+        with patch.object(atomic_slim, 'CONTRACT', self.contract_file):
+            atomic_slim.build(self.archive, self.sidecar, self.output)
+        manifest = json.loads((self.output / atomic_slim.MANIFEST).read_text())
+        raw = self.output / manifest['output']['json']['name']
+        data = json.loads(raw.read_text())
+        data['inventedRules'] = {'fake': True}
+        raw.write_text(json.dumps(data))
+        with self.assertRaisesRegex(ValueError, 'root'):
+            independent.audit(self.archive, self.sidecar, raw, self.output,
+                              self.root / 'audit.json', mark_verified=True)
+
+    def test_contract_only_change_has_distinct_release_identity(self):
+        previous = {'format': 'AtomicCards-slim.json', 'profile': 'atomic-b1',
+                    'verified': True, 'independent_audit': 'PASS',
+                    'data_sha256': 'a' * 64, 'contract_sha256': 'b' * 64,
+                    'counts': {'names': 1, 'records': 2},
+                    'upstream': {'url': atomic_slim.SOURCE_URL, 'date': '2026-11-14',
+                                 'version': '5.3.0+20261114', 'sha256_xz': 'c' * 64}}
+        current = copy.deepcopy(previous)
+        current['contract_sha256'] = 'd' * 64
+        old_tag = planning.decide(previous, None, True)['tag']
+        result = planning.decide(current, previous, True)
+        self.assertEqual(result['action'], 'PUBLISH')
+        self.assertNotEqual(result['tag'], old_tag)
+        self.assertNotEqual(result['tag'], 'atomic-slim-2026-11-14-aaaaaaaaaaaaaaaa')
+        self.assertEqual(planning.decide(previous, previous, True)['action'], 'SKIP_UNCHANGED')
+
     def test_atomic_workflow_is_isolated(self):
         workflow = (ROOT / ".github/workflows/atomic-weekly.yml").read_text()
         self.assertIn("atomic-slim-", workflow)

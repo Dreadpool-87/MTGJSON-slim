@@ -55,6 +55,30 @@ def read_meta(path, compressed):
         return next(ijson.items(stream, "meta", use_float=True), None)
 
 
+def audit_root(path, compressed):
+    """Independently inspect both complete roots; never import builder checks."""
+    import ijson
+    opener = lzma.open if compressed else open
+    names = set()
+    pending = None
+    with opener(path, 'rb') as stream:
+        tokens = iter(ijson.parse(stream, use_float=True))
+        if next(tokens, None) != ('', 'start_map', None):
+            raise ValueError('Audit root is not an object')
+        for prefix, event, value in tokens:
+            if prefix == '' and event == 'map_key':
+                if value in names or value not in ('meta', 'data'):
+                    raise ValueError('Unapproved or repeated audit root key: ' + value)
+                names.add(value)
+                pending = value
+            elif pending is not None and prefix == pending:
+                if event != 'start_map':
+                    raise ValueError('Audit root meta/data must be objects')
+                pending = None
+    if names != {'meta', 'data'}:
+        raise ValueError('Audit root lacks meta or data')
+
+
 def exact(expected, actual, loc):
     if type(expected) is not type(actual):
         raise ValueError(f"{loc}: changed value type")
@@ -94,6 +118,8 @@ def audit(source, sidecar, raw, package, report, mark_verified=False):
         raise ValueError("Source checksum or pinned manifest checksum mismatch")
     if manifest.get("verified") or manifest.get("independent_audit") != "PENDING":
         raise ValueError("Audit input is not a fresh, unverified package")
+    audit_root(source, compressed=True)
+    audit_root(raw, compressed=False)
     orig_meta = read_meta(source, compressed=True)
     slim_meta = read_meta(raw, compressed=False)
     exact(orig_meta, slim_meta, "$.meta")

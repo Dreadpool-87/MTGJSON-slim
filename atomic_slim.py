@@ -92,6 +92,29 @@ def parser_module():
     return ijson
 
 
+def check_root(path, compressed):
+    """Reject unknown/duplicate root fields before projection can hide them."""
+    opener = lzma.open if compressed else open
+    seen = set()
+    waiting = None
+    with opener(path, 'rb') as stream:
+        events = iter(parser_module().parse(stream, use_float=True))
+        if next(events, None) != ('', 'start_map', None):
+            raise ValueError('Atomic root must be an object')
+        for prefix, event, value in events:
+            if prefix == '' and event == 'map_key':
+                if value not in {'meta', 'data'} or value in seen:
+                    raise ValueError('Unexpected or duplicate Atomic root field: ' + value)
+                seen.add(value)
+                waiting = value
+            elif waiting is not None and prefix == waiting:
+                if event != 'start_map':
+                    raise ValueError('Atomic root meta/data must be objects')
+                waiting = None
+    if seen != {'meta', 'data'}:
+        raise ValueError('Atomic root must contain exactly meta and data')
+
+
 def meta_from_archive(archive):
     with lzma.open(archive, "rb") as stream:
         meta = next(parser_module().items(stream, "meta", use_float=True), None)
@@ -162,6 +185,7 @@ def write_sidecar(path):
 
 def build(archive, sidecar, output_dir):
     source_sha = check_source(archive, sidecar)
+    check_root(archive, compressed=True)
     contract = load_contract()
     meta = meta_from_archive(archive)
     output_dir = Path(output_dir)
