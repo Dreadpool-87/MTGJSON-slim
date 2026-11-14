@@ -78,7 +78,7 @@ def audit(json_package, sqlite_package, report):
         db.row_factory = sqlite3.Row
         if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise ValueError("SQLite quick_check failed")
-        for table in ("cards", "tokens", "cardIdentifiers", "tokenIdentifiers", "cardLegalities", "cardRulings"):
+        for table in ("cards", "tokens", "sets", "cardIdentifiers", "tokenIdentifiers", "cardLegalities", "cardRulings"):
             if db.execute("SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name=?", (table,)).fetchone()[0] != 1:
                 raise ValueError("Missing slim SQLite table " + table)
         with raw.open("rb") as inp:
@@ -121,6 +121,13 @@ def audit(json_package, sqlite_package, report):
                     continue
                 a, b = _scalar(card[field]), _scalar(row[field])
                 if a != b:
+                    # Official JSON embeds tokens beneath their parent set (e.g. 10E),
+                    # while official SQLite can identify the token set (T10E).
+                    # Accept ONLY a source-backed sets.tokenSetCode relationship.
+                    if table == "tokens" and field == "setCode" and isinstance(a, str):
+                        linked = db.execute("SELECT tokenSetCode FROM sets WHERE code=?", (a,)).fetchone()
+                        if linked is not None and linked[0] == b:
+                            continue
                     fail("field_mismatch", identifier, field, a, b)
             idtable = "cardIdentifiers" if table == "cards" else "tokenIdentifiers"
             ids = db.execute('SELECT * FROM "' + idtable + '" WHERE uuid=?', (identifier,)).fetchone()
