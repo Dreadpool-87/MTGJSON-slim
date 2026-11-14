@@ -124,12 +124,32 @@ def inventory(path):
 
 def check_profile(p):
     required = {'version', 'description', 'source_schema', 'tables', 'unique_keys', 'relationships'}
-    if not isinstance(p, dict) or not required <= set(p) or not set(p) <= required | {'indexes', 'historical_contract'}:
+    if not isinstance(p, dict) or not required <= set(p) or not set(p) <= required | {'indexes', 'historical_contract', 'intentional_omissions'}:
         raise ValueError('invalid profile keys')
     if not isinstance(p['version'], str) or not re.fullmatch(r'[A-Za-z0-9.-]+', p['version']):
         raise ValueError('invalid profile version')
     if not isinstance(p['tables'], dict) or not p['tables'] or not isinstance(p['unique_keys'], dict):
         raise ValueError('invalid profile tables or keys')
+    # Profile 2.3 is an explicit, reviewed exception to the old preservation guard.
+    # The original November contract and profile 2.2 are never rewritten.
+    omissions = {}
+    if p['version'] == '2.3':
+        omissions = {'cards': ['flavorText', 'isStorySpotlight'], 'tokens': ['flavorText']}
+        if p.get('intentional_omissions') != omissions:
+            raise ValueError('intentional omissions must match the exact approved profile 2.3 exceptions')
+        try:
+            previous = json.loads((Path(__file__).resolve().parent / 'profiles' / 'v2_2.json').read_text())
+        except (OSError, ValueError) as e:
+            raise ValueError('profile 2.2 baseline unavailable for profile 2.3 verification') from e
+        expected_tables = {table: [col for col in columns if col not in omissions.get(table, [])]
+                           for table, columns in previous['tables'].items()}
+        if p['tables'] != expected_tables or p['source_schema'] != previous['source_schema'] \
+                or p.get('indexes') != previous.get('indexes') \
+                or p['relationships'] != previous['relationships'] \
+                or p['unique_keys'] != previous['unique_keys']:
+            raise ValueError('profile 2.3 may remove only the three explicitly approved columns')
+    elif 'intentional_omissions' in p:
+        raise ValueError('intentional omissions are only approved for profile 2.3')
     # Compile the reviewed source DDL in memory to derive column types and indexes.
     with closing(sqlite3.connect(':memory:')) as c:
         try:
@@ -161,7 +181,11 @@ def check_profile(p):
                     raise ValueError(f'historical table missing or invalid: {table}')
                 info = {x[1]: x for x in c.execute(f'PRAGMA table_info({quote(table)})')}
                 for field, declared_type in fields.items():
-                    if field not in p['tables'][table] or field not in info:
+                    if field not in info:
+                        raise ValueError(f'historical source field missing: {table}.{field}')
+                    if field not in p['tables'][table]:
+                        if field in omissions.get(table, []):
+                            continue
                         raise ValueError(f'historical field missing: {table}.{field}')
                     if sqlite_affinity(declared_type) != sqlite_affinity(info[field][2]):
                         raise ValueError(f'historical affinity changed: {table}.{field}')
