@@ -177,9 +177,13 @@ the publication job reconstructs and rechecks raw JSON before generating ZIP
 and Zstandard. Public upload is draft-first and enabled **only** after all
 checks pass. No independent JSON public Release is created by fixture tests.
 
-**Publication remains disabled** via `JSON_PUBLICATION_ENABLED: 'false'` in
-the proposed new workflow, pending a successful end-to-end read-only release
-dry-run and final merge decision.
+**Publication acceptance:** [the full end-to-end read-only run #43618756802](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618756802)
+passed both full source-backed builders, independent JSON-field and SQLite
+identity checks, validation of the JSON-only data fingerprint, and a guarded
+release plan (blocked intentionally during the dry-run). The workflow now has
+`JSON_PUBLICATION_ENABLED: 'true'`, but **only main** is allowed to publish.
+The new Releases and live website remain unchanged until the PR is merged and
+the first main-branch publishing job actually succeeds.
 
 ## Acceptance gates before merging or publishing
 
@@ -189,7 +193,7 @@ dry-run and final merge decision.
 4. **PASS** — Full-data Zstandard/ZIP packaging, exact roundtrip hashes and per-file checksums.
 5. **PASS** — Same-date printing UUIDs, source-backed token-set relationships, Oracle IDs, rules, rulings and legalities compared against validated SQLite: 0 unexplained differences.
 6. **PASS WITH LIMITATIONS** — Source-vs-output field-loss audit and explicit deckbuilding omission policy; alternate-language search and draft/stock-deck analysis are deliberately out of scope.
-7. **IN PROGRESS** — New separate JSON Release pipeline and website support are staged. Full read-only end-to-end dry-run required before enabling publication/merging.
+7. **PASS FOR INTEGRATION** — The separate JSON Release pipeline and website code passed full read-only end-to-end testing. Actual first public Release, uploaded assets and live Pages deployment still require post-merge verification.
 
 MTGJSON remains the upstream data source. This is an independent unofficial derivative,
 not an endorsement or official MTGJSON alternative.
