@@ -46,7 +46,10 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('gh release edit', release)
         self.assertIn('--draft=false --latest', release)
         self.assertIn('MTGJSON_LICENSE.txt', release)
-        self.assertIn('-eq 6', release)
+        self.assertIn('-eq 10', release)
+        self.assertIn('scripts/package_extra_formats.py --package candidate', release)
+        self.assertIn('"candidate/$zst"', release)
+        self.assertIn('"candidate/$zip"', release)
         self.assertIn('--title "MTGJSON-slim — $source_date"', release)
         self.assertNotIn('--title "MTGJSON slim $RELEASE_TAG"', release)
 
@@ -71,7 +74,8 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('not affiliated with or endorsed by MTGJSON', self.readme)
         self.assertIn('The [first public Release]', self.readme)
         self.assertIn('every scheduled run', self.readme)
-        self.assertIn('all six assets are present', self.readme)
+        self.assertIn('all ten assets are present', self.readme)
+        self.assertIn('Settings → Pages', self.readme)
 
 
 if __name__ == '__main__':
