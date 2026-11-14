@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mtgjson-slim-${ github.ref }}
+  group: mtgjson-slim-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   tests:
@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
-      publish: ${ steps.release_plan.outputs.publish }}
-      tag: ${ steps.release_plan.outputs.tag }}
+      publish: ${{ steps.release_plan.outputs.publish }}
+      tag: ${{ steps.release_plan.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -51,8 +51,8 @@ jobs:
         id: release_plan
         shell: bash
         env:
-          GH_TOKEN: ${ github.token }}
-          DISTRIBUTION_APPROVED: ${ vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED }}
+          GH_TOKEN: ${{ github.token }}
+          DISTRIBUTION_APPROVED: ${{ vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED }}
         run: |
           set -euo pipefail
           mkdir -p previous evidence
@@ -137,7 +137,7 @@ jobs:
           path: candidate
       - name: Recheck downloaded candidate and immutable release tag
         env:
-          RELEASE_TAG: ${ needs.real-data.outputs.tag }}
+          RELEASE_TAG: ${{ needs.real-data.outputs.tag }}
         run: |
           set -euo pipefail
           python scripts/release_plan.py --package candidate --disabled --report release-recheck.json
@@ -150,8 +150,8 @@ jobs:
       - name: Upload draft first, verify assets and publish last
         shell: bash
         env:
-          GH_TOKEN: ${ github.token }}
-          RELEASE_TAG: ${ needs.real-data.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.real-data.outputs.tag }}
         run: |
           set -euo pipefail
           db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
