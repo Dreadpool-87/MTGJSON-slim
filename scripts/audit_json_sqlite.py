@@ -116,7 +116,7 @@ def audit(json_package, sqlite_package, report):
                 fail("uuid_not_in_sqlite", identifier)
                 return
             for field in CARD_FIELDS if table == "cards" else TOKEN_FIELDS:
-                if field not in card or field not in row.keys() or card[field] is None:
+                if field not in card or field not in row.keys():
                     continue
                 a, b = _scalar(card[field]), _scalar(row[field])
                 if a != b:
