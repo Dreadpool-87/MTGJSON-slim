@@ -6,13 +6,18 @@ on:
       - ".github/workflows/json-weekly.yml"
       - "scripts/json_release_plan.py"
       - "scripts/rehydrate_json.py"
+      - "scripts/require_published_sqlite.py"
+      - "tests/test_sqlite_publication_gate.py"
   push:
     branches: [main]
     paths:
       - ".github/workflows/json-weekly.yml"
-  schedule:
-    - cron: '20 7 * * 2'
-      timezone: 'Europe/Brussels'
+  # The SQLite workflow owns the weekly cadence (Tuesday 07:00 Europe/Brussels).
+  # JSON follows a finished, successful, trusted SQLite run, not a fixed delay.
+  workflow_run:
+    workflows: ["Verify MTGJSON slim"]
+    types: [completed]
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -33,7 +38,18 @@ jobs:
           if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - run: python -m unittest discover -s tests -v
   real-data:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    # Never trust workflow_run from PR/fork runs, even when their conclusion is success.
+    # Manual dispatch is allowed, but must pass the identical public SQLite gate.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'push' ||
+        github.event.workflow_run.event == 'schedule' ||
+        github.event.workflow_run.event == 'workflow_dispatch')) ||
+      ((github.event_name == 'workflow_dispatch' || github.event_name == 'push') &&
+       github.ref == 'refs/heads/main')
     needs: tests
     permissions:
       contents: read
@@ -76,6 +92,25 @@ jobs:
           python scripts/audit_json_sqlite.py \
             --json-package output-json --sqlite-package output-sqlite \
             --report evidence/json-sqlite.json
+      - name: Require already published, matching, validated SQLite Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p sqlite-public evidence
+          tag=$(python scripts/require_published_sqlite.py \
+            --sqlite-manifest output-sqlite/manifest.json --print-tag)
+          # A missing, draft or stale SQLite Release prevents all JSON publication.
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" > sqlite-public/release.json
+          gh release download "$tag" --pattern manifest.json --dir sqlite-public
+          python scripts/require_published_sqlite.py \
+            --sqlite-manifest output-sqlite/manifest.json \
+            --json-manifest output-json/json-manifest.json \
+            --release-json sqlite-public/release.json \
+            --published-manifest sqlite-public/manifest.json \
+            --report evidence/sqlite-publication-gate.json
+          cp output-sqlite/manifest.json output-json/sqlite-manifest.json
       - name: Decide only on changed JSON content and explicit approval
         id: plan
         env:
@@ -121,6 +156,7 @@ jobs:
             output-json/*.json.xz
             output-json/*.json.xz.sha256
             output-json/json-manifest.json
+            output-json/sqlite-manifest.json
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
@@ -141,6 +177,23 @@ jobs:
         with:
           name: verified-json-release-candidate
           path: candidate
+      - name: Recheck published SQLite dependency immediately before JSON publishing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p sqlite-public
+          tag=$(python scripts/require_published_sqlite.py \
+            --sqlite-manifest candidate/sqlite-manifest.json --print-tag)
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" > sqlite-public/release.json
+          gh release download "$tag" --pattern manifest.json --dir sqlite-public
+          python scripts/require_published_sqlite.py \
+            --sqlite-manifest candidate/sqlite-manifest.json \
+            --json-manifest candidate/json-manifest.json \
+            --release-json sqlite-public/release.json \
+            --published-manifest sqlite-public/manifest.json \
+            --report sqlite-release-publish-gate.json
       - name: Rehydrate verified XZ to raw JSON and verify full fingerprint
         run: python scripts/rehydrate_json.py --package candidate
       - name: Create and validate Zstandard and ZIP packages
