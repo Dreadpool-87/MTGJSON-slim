@@ -131,6 +131,7 @@ def output_sets(path):
 def make_json(archive, output):
     meta = read_meta(archive)
     counts = {"sets": 0, "cards": 0, "tokens": 0}
+    set_digests = {}
     # Streaming by whole set: no full 650+ MiB source JSON is loaded into RAM.
     with Path(output).open("w", encoding="utf-8", newline="\n") as dest:
         dest.write('{"meta":')
@@ -143,7 +144,9 @@ def make_json(archive, output):
                 dest.write(",")
             dest.write(canonical(code))
             dest.write(":")
-            dest.write(canonical(slim))
+            normalized_set = canonical(slim)
+            dest.write(normalized_set)
+            set_digests[code] = hashlib.sha256(normalized_set.encode("utf-8")).hexdigest()
             first = False
             counts["sets"] += 1
             counts["cards"] += len(slim["cards"])
@@ -151,7 +154,10 @@ def make_json(archive, output):
         dest.write("}}\n")
     if not counts["sets"] or not counts["cards"]:
         raise ValueError("No card sets found in official JSON source")
-    return meta, counts
+    # Content identity excludes the upstream meta/date/version so a metadata-only
+    # daily MTGJSON rebuild cannot create duplicate public releases.
+    content_digest = hashlib.sha256(canonical(set_digests).encode("utf-8")).hexdigest()
+    return meta, counts, content_digest
 
 
 def compare_to_source(archive, output, meta, counts):
@@ -197,7 +203,7 @@ def build(archive, checksum_path, output_dir):
     with tempfile.TemporaryDirectory(prefix=".json-slim-", dir=output_dir.parent) as tmp:
         temp = Path(tmp)
         result = temp / filename
-        meta_again, counts = make_json(archive, result)
+        meta_again, counts, content_digest = make_json(archive, result)
         if meta_again != meta:
             raise ValueError("Official source metadata changed during build")
         compare_to_source(archive, result, meta, counts)
@@ -221,6 +227,7 @@ def build(archive, checksum_path, output_dir):
             "profile": PROFILE,
             "upstream": {"url": SOURCE_URL, "sha256_xz": official_hash, **meta},
             "counts": counts,
+            "data_sha256": content_digest,
             "output": assets,
             "verified": True,
             "note": "Independent JSON source; SQLite/JSON need not have identical schemas.",
