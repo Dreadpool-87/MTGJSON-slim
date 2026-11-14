@@ -48,12 +48,14 @@ class CrossFormatTests(unittest.TestCase):
                 CREATE TABLE cards(uuid TEXT, name TEXT, setCode TEXT, number TEXT,
                                    layout TEXT, side TEXT, manaCost TEXT, manaValue REAL, text TEXT);
                 CREATE TABLE tokens(uuid TEXT, name TEXT, setCode TEXT, number TEXT, text TEXT);
+                CREATE TABLE sets(code TEXT, tokenSetCode TEXT);
                 CREATE TABLE cardIdentifiers(uuid TEXT, scryfallId TEXT, scryfallOracleId TEXT);
                 CREATE TABLE tokenIdentifiers(uuid TEXT, scryfallId TEXT, scryfallOracleId TEXT);
                 CREATE TABLE cardLegalities(uuid TEXT, commander TEXT);
                 CREATE TABLE cardRulings(uuid TEXT, date TEXT, text TEXT);
             """)
             db.execute("INSERT INTO meta VALUES (?,?)", (self.version, self.date))
+            db.execute("INSERT INTO sets VALUES (?,?)", ("ABC", "TABC"))
             db.execute("INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?)", (
                 "card-1", "Example", "ABC", "1", "normal", None, "{1}{G}", 2, "Example rules"))
             db.execute("INSERT INTO cardIdentifiers VALUES (?,?,?)", ("card-1", "scryfall-1", "oracle-1"))
@@ -110,6 +112,26 @@ class CrossFormatTests(unittest.TestCase):
         result = self.run_audit()
         self.assertEqual(result["status"], "FAIL")
         self.assertEqual(result["mismatches"]["uuid_not_in_sqlite"], 1)
+
+    def test_token_parent_set_mapping_is_source_backed(self):
+        self.json_data["data"]["ABC"]["tokens"].append({
+            "uuid": "token-1", "name": "Example Token", "setCode": "ABC",
+            "number": "1", "text": "Token rules",
+            "identifiers": {"scryfallId": "s-token"}
+        })
+        with sqlite3.connect(self.sql_file) as db:
+            db.execute("INSERT INTO tokens VALUES (?,?,?,?,?)", (
+                "token-1", "Example Token", "TABC", "1", "Token rules"))
+            db.execute("INSERT INTO tokenIdentifiers VALUES (?,?,?)", ("token-1", "s-token", None))
+        self._write_manifest()
+        self.assertEqual(self.run_audit()["status"], "PASS")
+        # If official set linkage is wrong, the difference must not be ignored.
+        with sqlite3.connect(self.sql_file) as db:
+            db.execute("UPDATE sets SET tokenSetCode='INVALID' WHERE code='ABC'")
+        self._write_manifest()
+        result = self.run_audit()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(result["mismatches"]["field_mismatch"], 1)
 
     def test_corrupted_json_rejected_before_query(self):
         self.json_file.write_bytes(b"tampered")
