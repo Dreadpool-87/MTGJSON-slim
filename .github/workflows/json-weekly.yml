@@ -7,7 +7,7 @@ on:
       - "scripts/json_release_plan.py"
       - "scripts/rehydrate_json.py"
   push:
-    branches: [main]
+    branches: [main, feature/direct-mtgjson-slim-json]
     paths:
       - ".github/workflows/json-weekly.yml"
   schedule:
@@ -33,7 +33,7 @@ jobs:
           if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - run: python -m unittest discover -s tests -v
   real-data:
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/direct-mtgjson-slim-json')
     needs: tests
     permissions:
       contents: read
