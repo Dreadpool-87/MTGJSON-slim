@@ -1,0 +1,183 @@
+name: Verified slim JSON weekly releases
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/json-weekly.yml"
+      - "scripts/json_release_plan.py"
+      - "scripts/rehydrate_json.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/json-weekly.yml"
+  schedule:
+    - cron: '20 7 * * 2'
+      timezone: 'Europe/Brussels'
+permissions:
+  contents: read
+concurrency:
+  group: mtgjson-slim-json-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install JSON dependency and zstd
+        run: |
+          python -m pip install -r requirements-json.txt
+          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
+      - run: python -m unittest discover -s tests -v
+  real-data:
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'push') && github.ref == 'refs/heads/main'
+    needs: tests
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-json.txt
+      - name: Retrieve independently verified official SQLite and JSON archives
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python slim.py download --directory downloads-sqlite --report evidence/sqlite-source.json
+          python slim_json.py download --directory downloads-json
+      - name: Build and source-validate both slim databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python slim.py build --archive downloads-sqlite/AllPrintings.sqlite.xz \
+            --sha256 "$(cat downloads-sqlite/AllPrintings.sqlite.xz.sha256)" \
+            --profile profiles/v2_3.json --output-dir output-sqlite \
+            --tool-commit "$GITHUB_SHA" --report evidence/sqlite-build.json
+          python slim_json.py build --archive downloads-json/AllPrintings.json.xz \
+            --checksum-path downloads-json/AllPrintings.json.xz.sha256 \
+            --output-dir output-json
+      - name: Verify complete field retention and same-date SQLite identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          filename=$(python -c 'import json;print(json.load(open("output-json/json-manifest.json"))["output"]["json"]["name"])')
+          python scripts/audit_json_field_selection.py \
+            --source downloads-json/AllPrintings.json.xz \
+            --slim-json "output-json/$filename" --report evidence/json-fields.json
+          python scripts/audit_json_sqlite.py \
+            --json-package output-json --sqlite-package output-sqlite \
+            --report evidence/json-sqlite.json
+      - name: Decide only on changed JSON content and explicit approval
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JSON_PUBLICATION_ENABLED: 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p previous
+          latest=$(gh release list --limit 1000 --json tagName,isDraft \
+            --jq '[.[] | select(.isDraft == false and (.tagName | startswith("json-slim-")))] | .[0].tagName // ""')
+          args=(--package output-json --report evidence/json-release-plan.json)
+          if [[ -n "$latest" ]]; then
+            gh release download "$latest" --pattern json-manifest.json --dir previous
+            test -f previous/json-manifest.json
+            args+=(--previous previous/json-manifest.json)
+          fi
+          if [[ "$JSON_PUBLICATION_ENABLED" == "true" ]]; then args+=(--enabled); fi
+          python scripts/json_release_plan.py "${args[@]}"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          p = json.load(open("evidence/json-release-plan.json"))
+          print("publish=" + str(p["action"] == "PUBLISH").lower())
+          print("tag=" + p["tag"])
+          PY
+      - name: Retain validation evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-release-evidence
+          path: |
+            evidence/*.json
+            output-json/json-manifest.json
+            output-sqlite/manifest.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Transfer only compressed JSON when approved and changed
+        if: steps.plan.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-json-release-candidate
+          path: |
+            output-json/*.json.xz
+            output-json/*.json.xz.sha256
+            output-json/json-manifest.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+  publish:
+    if: github.ref == 'refs/heads/main' && needs.real-data.outputs.publish == 'true'
+    needs: real-data
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-json.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-json-release-candidate
+          path: candidate
+      - name: Rehydrate verified XZ to raw JSON and verify full fingerprint
+        run: python scripts/rehydrate_json.py --package candidate
+      - name: Create and validate Zstandard and ZIP packages
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
+          python scripts/package_json_formats.py --package candidate --report json-extra-formats.json
+      - name: Create draft, verify ten assets, publish without replacing SQLite latest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.real-data.outputs.tag }}
+        run: |
+          set -euo pipefail
+          filename=$(python -c 'import json;print(json.load(open("candidate/json-manifest.json"))["output"]["json"]["name"])')
+          date=$(python -c 'import json;print(json.load(open("candidate/json-manifest.json"))["upstream"]["date"])')
+          fp=$(python -c 'import json;print(json.load(open("candidate/json-manifest.json"))["data_sha256"][:16])')
+          test "$RELEASE_TAG" = "json-slim-$date-$fp"
+          files=("candidate/$filename" "candidate/$filename.sha256"
+                 "candidate/$filename.xz" "candidate/$filename.xz.sha256"
+                 "candidate/$filename.zst" "candidate/$filename.zst.sha256"
+                 "candidate/$filename.zip" "candidate/$filename.zip.sha256"
+                 "candidate/json-manifest.json" "MTGJSON_LICENSE.txt")
+          for item in "${files[@]}"; do test -s "$item"; done
+          cat > json-release-notes.md <<'EOF'
+          Independent deckbuilding-focused JSON derived directly from official MTGJSON AllPrintings.json.
+          - Same-date source-backed comparison against validated slim SQLite.
+          - Raw JSON, XZ, ZIP and Zstandard decompress to identical JSON bytes.
+          - Separate SHA-256 sidecars and json-manifest.json provenance.
+          - Existing SQLite Releases remain separate and unchanged.
+          - Powered by MTGJSON (https://mtgjson.com/), independent unofficial project.
+          - Upstream MIT notice: MTGJSON_LICENSE.txt.
+          EOF
+          gh release create "$RELEASE_TAG" "${files[@]}" \
+            --target "$GITHUB_SHA" --title "MTGJSON-slim JSON — $date" \
+            --notes-file json-release-notes.md --draft --latest=false
+          gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > assets.txt
+          for item in "${files[@]}"; do grep -Fx "$(basename "$item")" assets.txt >/dev/null; done
+          [[ $(wc -l < assets.txt) -eq 10 ]]
+          gh release edit "$RELEASE_TAG" --draft=false --latest=false
