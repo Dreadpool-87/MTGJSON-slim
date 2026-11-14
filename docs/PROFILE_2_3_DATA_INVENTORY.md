@@ -84,7 +84,7 @@ The earlier profile already omits **12 entire source tables**: `cardForeignData`
 - `isStorySpotlight` affects narrative metadata only. No gameplay, Oracle, legality, printed-name or index column is dropped.
 - **All 20 indexes unchanged** and checked against profile 2.2. See below.
 - Original non-English physical printings and their retained printed names are still preserved. Dropping `cardForeignData` does not imply English-only printings.
-- This removes 3 output columns; it does not imply that a public dataset Release is legally authorized. The rights gate remains disabled until distribution is cleared.
+- These three omissions leave rules text, original/printed text and card rulings intact; consult [source and third-party notices](../THIRD_PARTY_NOTICES.md) for data provenance and attribution.
 - Storage savings in raw SQLite and XZ depend on actual non-null value frequencies and SQLite page layout. The exact combined savings have now been measured, with a single official source archive for both profiles (see below). The contribution of each removed column individually was not measured.
 
 ## Explicit indexes (unchanged: 20)
@@ -127,4 +127,4 @@ The source-backed comparison verified that all 8 tables kept the same row counts
 
 ## Testing and distribution
 
-Run `python -m unittest discover -s tests -v`. The new tests verify the complete v2.2→v2.3 field difference, exact approved omissions, retained rules/rulings/alternative names, preserved indexes, fail-closed behavior and live SQLite projection on a synthetic source. The weekly GitHub workflow uses `profiles/v2_3.json` and rebuilds a fresh SQLite before generating the lossless XZ copy. Public Releases remain guarded by explicit rights approval. Full source-backed acceptance and exact measured sizes are recorded above. No public database Release was created.
+Run `python -m unittest discover -s tests -v`. The new tests verify the complete v2.2→v2.3 field difference, exact approved omissions, retained rules/rulings/alternative names, preserved indexes, fail-closed behavior and live SQLite projection on a synthetic source. The weekly GitHub workflow uses `profiles/v2_3.json` and rebuilds a fresh SQLite before generating the lossless XZ copy. Public Releases use the verified draft-first publish workflow; see [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases). Full source-backed acceptance and exact measured sizes are recorded above.
