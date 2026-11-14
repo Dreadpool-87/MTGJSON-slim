@@ -11,7 +11,7 @@ This repository contains independent Python converter code and documentation und
 - Official brand assets and usage conditions: https://mtgjson.com/brand-assets/
 - Upstream project license reference: https://github.com/mtgjson/mtgjson/blob/master/LICENSE.txt
 
-The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to any permitted derivative distribution.
+The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to any permitted derivative distribution. An authorized GitHub Release additionally carries the complete upstream MIT notice as `MTGJSON_LICENSE.txt`.
 
 **Powered by [MTGJSON](https://mtgjson.com/).** This is an independent community project and is **not affiliated with or endorsed by MTGJSON**.
 
