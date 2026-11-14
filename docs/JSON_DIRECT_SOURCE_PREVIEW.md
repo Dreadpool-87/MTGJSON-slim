@@ -104,14 +104,30 @@ before making a Release public, and avoids excessive temporary Actions storage.
 
 This verifies deterministic same-runtime outputs for the pinned official source. A JSON-versus-SQLite cross-format identity audit and safe publishing integration are still outstanding; no public JSON files are released.
 
+## Verified full-data packaging — 14 November 2026
+
+[GitHub Actions #43616001606](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43616001606) built both independent source-derived JSON outputs from official MTGJSON `5.3.0+20261114`, confirmed byte-identical JSON/XZ and matching manifests, then produced ZIP and Zstandard from the verified first JSON.
+
+| Format | Bytes | SHA-256 |
+| --- | ---: | --- |
+| Raw `.json` | 290,480,106 | `eaa382d2f30511a64291848d75880c58b0b3979f757cf5e6881ee3198b04cf8e` |
+| XZ `.json.xz` | 25,614,036 | `dd7cd10924a8bc3f1d021616307b45562506cf22619682bf32c8d2cce3a63603` |
+| Zstandard `.json.zst` | 32,897,371 | `8e2c0b789d2b29dd84994d7893152a4cb539e9bea1c6cbc90c8a256ce8b9c8bd` |
+| ZIP `.json.zip` | 54,195,094 | `e2cdfd5838bbfcdb7de716ed32b1e40a2c934ee063e9899e019f2c79bcf6a60f` |
+
+The ZIP contains exactly one JSON file; ZIP and Zstandard both unpacked to raw JSON SHA-256 `eaa382d2f30511a64291848d75880c58b0b3979f757cf5e6881ee3198b04cf8e`. The full packaging step returned `FULL_JSON_ZIP_ZSTD_ROUNDTRIP_PASS`; it ran in 11.42 seconds on the GitHub runner. These are pinned-source measurements and not promises for future data.
+
+**No public JSON Release was created.** Cross-format semantic acceptance and approval of the public publishing integration are still pending.
+
 ## Acceptance gates before merging or publishing
 
 1. **PASS** — Official full `AllPrintings.json.xz` download and checksum verification.
 2. **PASS** — Full builder, independent source/output per-set comparison, counts, hashes, sizes, and memory/time measurements.
 3. **PASS** — Two byte-identical complete builds in one runner from the same verified archive.
-4. **PENDING** — Cross-check printing UUIDs, multi-face relationships, Oracle IDs and legalities against a same-date validated SQLite output, allowing for different schemas.
-5. **PENDING** — Independent review of excluded fields for deckbuilding/AI consumers.
-6. **PENDING** — Separately approve Release/website integration without doubling temporary GitHub Actions artifact storage.
+4. **PASS** — Full-data Zstandard/ZIP packaging, exact roundtrip hashes and per-file checksums.
+5. **PENDING** — Cross-check printing UUIDs, multi-face relationships, Oracle IDs and legalities against a same-date validated SQLite output, allowing for different schemas.
+6. **PENDING** — Independent review of excluded fields for deckbuilding/AI consumers.
+7. **PENDING** — Separately approve Release/website integration without doubling temporary GitHub Actions artifact storage.
 
 MTGJSON remains the upstream data source. This is an independent unofficial derivative,
 not an endorsement or official MTGJSON alternative.
