@@ -23,7 +23,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
 
   real-data:
-    if: github.event_name == 'pull_request' || ((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.ref == 'refs/heads/main'
     needs: tests
     permissions:
       contents: read
@@ -47,60 +47,6 @@ jobs:
             --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
             --profile profiles/v2_3.json --output-dir output \
             --tool-commit "$GITHUB_SHA" --report evidence/build.json
-      - name: TEMP ACCEPTANCE TEST - build historical 2.2 and compare 2.3
-        if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          python slim.py build --archive downloads/AllPrintings.sqlite.xz \
-            --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
-            --profile profiles/v2_2.json --output-dir output22 \
-            --tool-commit "$GITHUB_SHA" --report evidence/build22.json
-          python - <<'PY'
-          import json
-          import sqlite3
-          from contextlib import closing
-          from pathlib import Path
-          import slim
-          a = json.loads(Path('output22/manifest.json').read_text())
-          b = json.loads(Path('output/manifest.json').read_text())
-          v = json.loads(Path('output/validation.json').read_text())
-          p = json.loads(Path('profiles/v2_3.json').read_text())
-          raw_before = a['output']['sqlite']['size_bytes']
-          raw_after = b['output']['sqlite']['size_bytes']
-          xz_before = a['output']['archive']['size_bytes']
-          xz_after = b['output']['archive']['size_bytes']
-          expected = {'cards': ['isStorySpotlight', 'flavorText'], 'tokens': ['flavorText']}
-          before = Path('output22') / a['output']['sqlite']['name']
-          after = Path('output') / b['output']['sqlite']['name']
-          diff = {}
-          with closing(slim.connect(before)) as c22, closing(slim.connect(after)) as c23:
-              for table, fields in p['tables'].items():
-                  cols22 = [row[1] for row in c22.execute(f'PRAGMA table_info("{table}")')]
-                  cols23 = [row[1] for row in c23.execute(f'PRAGMA table_info("{table}")')]
-                  removed = [field for field in cols22 if field not in cols23]
-                  assert removed == expected.get(table, []), (table, removed)
-                  old_projection = slim.logical_hash(c22, table, fields)
-                  assert old_projection == v['tables'][table], (table, 'selected values changed')
-                  diff[table] = {'removed_columns': removed, 'same_selected_values': True,
-                                 'row_count': old_projection['count']}
-              idx22 = sorted((r[0], r[1]) for r in c22.execute(
-                  "SELECT name,sql FROM sqlite_schema WHERE type='index' ORDER BY name") if r[0])
-              idx23 = sorted((r[0], r[1]) for r in c23.execute(
-                  "SELECT name,sql FROM sqlite_schema WHERE type='index' ORDER BY name") if r[0])
-              assert idx22 == idx23, 'indexes changed'
-          results = {
-              'status': 'PASS', 'source_sha256': b['upstream']['archive_sha256'],
-              'raw_sqlite_before_bytes': raw_before, 'raw_sqlite_after_bytes': raw_after,
-              'raw_saved_bytes': raw_before - raw_after,
-              'xz_before_bytes': xz_before, 'xz_after_bytes': xz_after,
-              'xz_saved_bytes': xz_before - xz_after,
-              'tables': diff, 'indexes_identical': True,
-              'old_profile': a['profile_version'], 'new_profile': b['profile_version']
-          }
-          assert raw_after < raw_before, 'No size reduction in raw SQLite'
-          Path('evidence/profile_comparison.json').write_text(json.dumps(results, indent=2) + '\n')
-          print(json.dumps(results, sort_keys=True))
-          PY
       - name: Verify formats and compare against last published Release
         id: release_plan
         shell: bash
