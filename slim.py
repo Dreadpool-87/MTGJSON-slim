@@ -143,7 +143,7 @@ def check_profile(p):
             lock = json.loads(lock_path.read_text())
         except (OSError, ValueError) as e:
             raise ValueError('main profile 2.3 lock unavailable') from e
-        fields = ('tables', 'indexes', 'unique_keys', 'relationships')
+        fields = ('tables', 'indexes', 'unique_keys', 'relationships', 'source_schema')
         if lock.get('profile_version') != '2.3' or any(
                 p.get(field) != lock.get(field) for field in fields):
             raise ValueError('main profile 2.3 differs from locked approved selection')
