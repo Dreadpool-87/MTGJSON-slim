@@ -24,7 +24,7 @@ python slim.py build \
   --tool-commit "$(git rev-parse HEAD)" --report evidence/build.json
 ```
 
-Outputs include a version-specific `.sqlite`, `.sqlite.xz`, archive SHA-256 sidecar, provenance manifest, validation report and full upstream schema/count inventory. The build verifies the archive **before** decompression, prepares in a temporary directory, and exposes the package only after validation and compression succeed. Reports must live outside the package and must not alias inputs.
+Outputs include a version-specific **uncompressed `.sqlite` and losslessly compressed `.sqlite.xz`**, **a SHA-256 sidecar for each file**, a provenance manifest, a validation report and a full upstream schema/count inventory. The build verifies the archive **before** decompression, prepares in a temporary directory, and exposes the package only after validation and compression succeed. Reports must live outside the package and must not alias inputs.
 
 For a checksum-only upstream check, use `download --previous-sha256 <prior-official-digest>` with the other download arguments; `UNCHANGED` skips the archive download. Repeat the same build command to detect unchanged upstream/profile/tool inputs in an existing package. Existing packages are rechecked against the verified source projection and their compressed/database bytes before returning `UNCHANGED`. A changed input/profile/tool requires a new output directory. Nothing is silently overwritten.
 
@@ -37,6 +37,24 @@ python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.2.
 ```
 
 All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
+
+## Prepared distribution formats (no public Release yet)
+
+When distribution has been separately cleared and approved, **both** database variants must be available from the **same MTGJSON-slim repository Release**. No second repository is needed:
+
+| Planned asset | Purpose |
+| --- | --- |
+| `AllPrintings-slim-<source-version>-profile-2.2.sqlite` | Uncompressed, directly usable SQLite database |
+| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.sha256` | SHA-256 verification for the uncompressed database |
+| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
+| `AllPrintings-slim-<source-version>-profile-2.2.sqlite.xz.sha256` | SHA-256 verification for the compressed database |
+| `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
+
+The converter **already produces both database files locally**. The build now also emits and checks a checksum sidecar for **each** database variant. A compressed file must decompress byte-for-byte to its corresponding `.sqlite`; either file must contain the **same slim projection**: eight retained tables and the explicitly selected fields/indexes. Compression does not determine which data is excluded.
+
+**Distribution is not enabled:** GitHub Actions keeps only JSON evidence; neither database file is currently a public download. A future public Release requires a documented review of MTGJSON/Wizards/third-party data redistribution rights and a separately approved non-publishing-to-publishing workflow change. Do not confuse local package readiness with permission to redistribute the data.
+
+A `.sql` export is a text script for reconstructing a database, not a directly queryable SQLite file. `psql` is the PostgreSQL client and a `.psql` extension is not a universal database container. The project intentionally **does not** add SQL or PostgreSQL exports; they offer no clear benefit for the primary SQLite consumers and would add build/test complexity.
 
 ## Current SQLite data profile
 
