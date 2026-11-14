@@ -157,7 +157,7 @@ jobs:
           db=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["output"]["sqlite"]["name"])')
           xz="${db}.xz"
           files=("candidate/$db" "candidate/$db.sha256"
-                 "candidate/$xz" "candidate/$xz.sha256" "candidate/manifest.json")
+                 "candidate/$xz" "candidate/$xz.sha256" "candidate/manifest.json" "MTGJSON_LICENSE.txt")
           for item in "${files[@]}"; do test -s "$item"; done
           cat > release-notes.md <<'EOF'
           Validated slim SQLite built from official MTGJSON AllPrintings.
@@ -166,6 +166,7 @@ jobs:
           - XZ decompresses to the exact same SQLite; both have SHA-256 sidecars.
           - See manifest.json for source and output provenance.
           - Powered by MTGJSON (https://mtgjson.com/). Independent unofficial project, not endorsed by Wizards of the Coast or MTGJSON.
+          - The upstream MIT license notice is included as MTGJSON_LICENSE.txt.
           - Third-party notices: https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/THIRD_PARTY_NOTICES.md
           EOF
           gh release create "$RELEASE_TAG" "${files[@]}" \
@@ -175,5 +176,5 @@ jobs:
           for item in "${files[@]}"; do
             grep -Fx "$(basename "$item")" published-assets.txt >/dev/null
           done
-          [[ $(wc -l < published-assets.txt) -eq 5 ]]
+          [[ $(wc -l < published-assets.txt) -eq 6 ]]
           gh release edit "$RELEASE_TAG" --draft=false --latest
