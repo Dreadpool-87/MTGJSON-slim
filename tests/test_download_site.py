@@ -65,6 +65,8 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn("item.name.startsWith('AllPrintings-slim-')", self.html)
         self.assertIn("item.browser_download_url.startsWith(prefix)", self.html)
         self.assertIn("link.removeAttribute('aria-disabled')", self.html)
+        self.assertIn("checksumLink.href = sha.browser_download_url", self.html)
+        self.assertEqual(self.html.count('data-json-sha=".json'), 4)
         self.assertIn("JSON is not yet included in the latest public Release.", self.html)
 
 
