@@ -85,7 +85,7 @@ class AtomicSlimTests(unittest.TestCase):
             self.assertEqual(json.loads(raw.read_text())["data"], actual["data"])
 
     def test_unsafe_alias_rejected(self):
-        self.cards[0]["convertedManaCost"] = 9
+        self.original["data"]["Example"][0]["convertedManaCost"] = 9
         self.prepare()
         with patch.object(atomic_slim, "CONTRACT", self.contract_file):
             with self.assertRaisesRegex(ValueError, "Unsafe deprecated mana alias"):
@@ -150,6 +150,17 @@ class AtomicSlimTests(unittest.TestCase):
         self.assertEqual(planning.decide(m, None, True)["action"], "PUBLISH")
         self.assertEqual(planning.decide(m, m, True)["action"], "SKIP_UNCHANGED")
         self.assertEqual(planning.decide(m, None, False)["action"], "BLOCKED")
+
+    def test_atomic_download_page_requires_checksums(self):
+        site = (ROOT / "docs/index.html").read_text(encoding="utf-8")
+        self.assertIn('id="atomic-title"', site)
+        self.assertIn("item.tag_name.startsWith('atomic-slim-')", site)
+        self.assertIn("item.name.startsWith('AtomicCards-slim-')", site)
+        for ext in (".json", ".json.xz", ".json.zst", ".json.zip"):
+            self.assertIn('data-atomic-extension="' + ext + '"', site)
+            self.assertIn('data-atomic-sha="' + ext + '"', site)
+        self.assertIn("checksumLink.href = sidecar.browser_download_url", site)
+        self.assertIn("link.removeAttribute('aria-disabled')", site)
 
     def test_atomic_workflow_is_isolated(self):
         workflow = (ROOT / ".github/workflows/atomic-weekly.yml").read_text()
