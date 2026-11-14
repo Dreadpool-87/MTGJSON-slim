@@ -69,7 +69,7 @@ jobs:
           raw_after = b['output']['sqlite']['size_bytes']
           xz_before = a['output']['archive']['size_bytes']
           xz_after = b['output']['archive']['size_bytes']
-          expected = {'cards': ['flavorText', 'isStorySpotlight'], 'tokens': ['flavorText']}
+          expected = {'cards': ['isStorySpotlight', 'flavorText'], 'tokens': ['flavorText']}
           before = Path('output22') / a['output']['sqlite']['name']
           after = Path('output') / b['output']['sqlite']['name']
           diff = {}
@@ -83,9 +83,9 @@ jobs:
                   assert old_projection == v['tables'][table], (table, 'selected values changed')
                   diff[table] = {'removed_columns': removed, 'same_selected_values': True,
                                  'row_count': old_projection['count']}
-              idx22 = sorted((r[0], r[2]) for r in c22.execute(
+              idx22 = sorted((r[0], r[1]) for r in c22.execute(
                   "SELECT name,sql FROM sqlite_schema WHERE type='index' ORDER BY name") if r[0])
-              idx23 = sorted((r[0], r[2]) for r in c23.execute(
+              idx23 = sorted((r[0], r[1]) for r in c23.execute(
                   "SELECT name,sql FROM sqlite_schema WHERE type='index' ORDER BY name") if r[0])
               assert idx22 == idx23, 'indexes changed'
           results = {
