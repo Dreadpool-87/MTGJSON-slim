@@ -1,59 +1,61 @@
-"""Regression checks for the intentionally non-publishing weekly verification schedule."""
-
+"""Workflow safety regression checks: weekly rebuild, semantic release and rights gate."""
 from pathlib import Path
 import re
 import unittest
 
-
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / ".github" / "workflows" / "verify.yml"
-README = ROOT / "README.md"
+WORKFLOW = ROOT / '.github' / 'workflows' / 'verify.yml'
+README = ROOT / 'README.md'
 
 
-class WeeklyVerificationScheduleTests(unittest.TestCase):
+class WeeklyReleaseWorkflowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.workflow = WORKFLOW.read_text(encoding="utf-8")
-        cls.readme = README.read_text(encoding="utf-8")
+        cls.workflow = WORKFLOW.read_text()
+        cls.readme = README.read_text()
 
-    def test_tuesday_seven_belgian_local_time_with_dst(self):
+    def test_tuesday_seven_local_time_with_dst_and_single_cron(self):
         self.assertRegex(
             self.workflow,
-            r"(?m)^  schedule:\n    - cron: '0 7 \* \* 2'\n      timezone: 'Europe/Brussels'$",
-        )
-        self.assertEqual(
-            len(re.findall(r"(?m)^    - cron:", self.workflow)), 1,
-            "The workflow should have only one automatic weekly schedule",
-        )
+            r"(?m)^  schedule:\n    - cron: '0 7 \* \* 2'\n      timezone: 'Europe/Brussels'$")
+        self.assertEqual(len(re.findall(r'(?m)^    - cron:', self.workflow)), 1)
 
-    def test_manual_and_pull_request_events_retained(self):
-        self.assertIn("  workflow_dispatch:", self.workflow)
-        self.assertIn("  pull_request:", self.workflow)
-        self.assertIn(
-            "if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'",
-            self.workflow,
-        )
-        self.assertIn("    needs: tests", self.workflow)
+    def test_always_rebuilds_without_prior_sha_skip(self):
+        self.assertIn('  workflow_dispatch:', self.workflow)
+        self.assertIn('  pull_request:', self.workflow)
+        self.assertIn("github.ref == 'refs/heads/main'", self.workflow)
+        self.assertIn('python slim.py download --directory downloads --report evidence/download.json', self.workflow)
+        self.assertIn('python slim.py build --archive downloads/AllPrintings.sqlite.xz', self.workflow)
+        self.assertNotIn('previous_upstream_sha256', self.workflow)
+        self.assertNotIn('--previous-sha256', self.workflow)
 
-    def test_reports_only_and_read_only_permissions(self):
-        self.assertIn("  contents: read", self.workflow)
-        self.assertNotRegex(self.workflow, r"(?m)^\s*contents:\s*write\s*$")
-        reports = self.workflow.split("      - name: Retain reports only\n", 1)
-        self.assertEqual(len(reports), 2)
-        self.assertIn("retention-days: 14", reports[1])
-        self.assertIn("output/validation.json", reports[1])
-        self.assertIn("output/source-inventory.json", reports[1])
-        self.assertNotIn(".sqlite", reports[1])
-        self.assertNotIn("gh release", self.workflow)
-        self.assertNotIn("action-gh-release", self.workflow)
-        self.assertNotIn("schedule: 'daily'", self.workflow)
+    def test_only_release_job_has_write_and_rights_gate(self):
+        self.assertIn('permissions:\n  contents: read', self.workflow)
+        before, release = self.workflow.split('\n  publish:\n', 1)
+        self.assertNotRegex(before, r'(?m)^\s*contents: write\s*$')
+        self.assertIn('    permissions:\n      contents: write', release)
+        self.assertIn("vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED == 'true'", release)
+        self.assertIn('needs.real-data.outputs.publish', release)
+        self.assertIn('gh release create', release)
+        self.assertIn('--draft', release)
+        self.assertIn('gh release edit', release)
+        self.assertIn('--draft=false --latest', release)
 
-    def test_readme_discloses_real_weekly_behavior(self):
-        self.assertIn("Tuesday at 07:00", self.readme)
-        self.assertIn("Europe/Brussels", self.readme)
-        self.assertIn("one official download and one complete build per week", self.readme)
-        self.assertIn("not** uploaded, released, committed or published", self.readme)
+    def test_only_changed_approved_packages_are_transferred(self):
+        self.assertIn("steps.release_plan.outputs.publish == 'true'", self.workflow)
+        self.assertIn("vars.MTGJSON_PUBLIC_DISTRIBUTION_APPROVED == 'true'", self.workflow)
+        self.assertIn('scripts/release_plan.py --package output --disabled', self.workflow)
+        self.assertIn('output/*.sqlite', self.workflow)
+        self.assertIn('output/*.sqlite.xz', self.workflow)
+        self.assertIn('retention-days: 1', self.workflow)
+        self.assertIn('retention-days: 14', self.workflow)
+
+    def test_readme_truthfully_states_release_gate(self):
+        self.assertIn('Tuesday at 07:00', self.readme)
+        self.assertIn('Europe/Brussels', self.readme)
+        self.assertIn('MTGJSON_PUBLIC_DISTRIBUTION_APPROVED', self.readme)
+        self.assertIn('every scheduled run', self.readme)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
