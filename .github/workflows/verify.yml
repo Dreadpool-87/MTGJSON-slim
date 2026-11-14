@@ -176,8 +176,9 @@ jobs:
           - The upstream MIT license notice is included as MTGJSON_LICENSE.txt.
           - Third-party notices: https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/THIRD_PARTY_NOTICES.md
           EOF
+          source_date=$(python -c 'import json; print(json.load(open("candidate/manifest.json"))["upstream"]["date"])')
           gh release create "$RELEASE_TAG" "${files[@]}" \
-            --target "$GITHUB_SHA" --title "MTGJSON slim $RELEASE_TAG" \
+            --target "$GITHUB_SHA" --title "MTGJSON-slim — $source_date" \
             --notes-file release-notes.md --draft
           gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' > published-assets.txt
           for item in "${files[@]}"; do
