@@ -269,6 +269,27 @@ def validate(path, p, source=None):
     return {'status': 'PASS', 'integrity_check': 'ok', 'tables': tables, 'schema': expected}
 
 
+
+def release_content(validation):
+    """Logical release fingerprint: all selected data except changing source metadata.
+
+    Includes the resulting tables and SQL/index schema; independent of SQLite/XZ
+    byte layout, runtime and the source's build date/version metadata.
+    """
+    if validation.get('status') != 'PASS' or not validation.get('tables') or not validation.get('schema'):
+        raise ValueError('cannot fingerprint invalid or empty validation')
+    tables = {name: value for name, value in sorted(validation['tables'].items()) if name != 'meta'}
+    if not tables or any(not re.fullmatch(r'[0-9a-f]{64}', value.get('logical_sha256', ''))
+                         or not isinstance(value.get('count'), int) or value['count'] < 0
+                         for value in tables.values()):
+        raise ValueError('invalid projected table digest')
+    schema_sha = hashlib.sha256(json.dumps(validation['schema'], sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    content = {'schema_sha256': schema_sha, 'tables': tables}
+    content['fingerprint'] = hashlib.sha256(
+        json.dumps(content, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    return content
+
+
 def convert(source, output, p):
     ddl = check_profile(p)
     source, output = Path(source).resolve(), Path(output).resolve()
@@ -374,6 +395,7 @@ def build(archive, expected, profile_path, output_dir, tool_commit):
                     'version': version, 'date': date, 'archive_sha256': expected.lower(),
                     'archive_size_bytes': Path(archive).stat().st_size, 'sqlite_sha256': digest(source),
                     'sqlite_size_bytes': source.stat().st_size},
+                    'content': release_content(report),
                     'profile_version': p['version'], 'profile_sha256': profile_sha,
                     'tool_commit': tool_commit, 'output': output,
                     'runtime': {'python': sys.version, 'sqlite': sqlite3.sqlite_version},
