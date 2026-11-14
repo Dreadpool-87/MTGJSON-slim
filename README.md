@@ -129,6 +129,10 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 
 ## Source and attribution
 
+<a href="https://mtgjson.com/">
+  <img src="https://mtgjson.com/images/assets/logo-mtgjson.svg" width="60" alt="MTGJSON logo" />
+</a>
+
 **Powered by [MTGJSON](https://mtgjson.com/).** This is an independent, unofficial community project, not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
 
 The converter uses the official MTGJSON `AllPrintings` dataset; its source version and checksums are recorded in each Release manifest. The repository's [MIT license](LICENSE) covers our own converter code. Upstream copyright and other data rights remain with their respective owners. See the [MTGJSON license](https://mtgjson.com/license/), the bundled [MTGJSON MIT notice](MTGJSON_LICENSE.txt) and our [third-party notices](THIRD_PARTY_NOTICES.md).
