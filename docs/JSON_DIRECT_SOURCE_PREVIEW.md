@@ -3,7 +3,7 @@
 **Status: separate preview only.** This branch adds an independent importer of official MTGJSON
 [AllPrintings.json.xz](https://mtgjson.com/api/v5/AllPrintings.json.xz). It deliberately does
 **not** alter the existing SQLite converter, profile 2.3, weekly publishing workflow, live site,
-or public Releases. A first full official JSON acceptance run succeeded on GitHub Actions; reproducibility and cross-format comparisons remain separate acceptance gates.
+or public Releases. Two full official-source JSON builds in one GitHub Actions run produced byte-identical output. Cross-format checks and public-release integration remain separate acceptance gates.
 
 ## Why independently source JSON?
 
@@ -70,19 +70,18 @@ Nothing is published automatically. The builder refuses to overwrite an existing
 - Measured build + full independent source/output comparison + XZ compression/roundtrip: **1:46.69** on one GitHub-hosted Linux runner; max RSS **194,768 KiB** (~190 MiB)
 - Source and output were compared set-by-set after projection. The published SQLite Release was **not** modified.
 
-This is one full real-data build with source-backed validation; it does **not** by itself prove byte-identical reproduction on a second build, completeness of all cross-format fields, or readiness for public Release integration.
+**Independent reproducibility check:** [GitHub Actions run #43609523767](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43609523767) downloaded and verified official `AllPrintings.json.xz` once, then performed **two full direct-source builds**. Both sets of raw JSON and XZ hashes and the complete manifests were identical (`SECOND_BUILD_BYTE_IDENTICAL_PASS`). Each build independently validated all retained values against the source and the XZ roundtrip. The full run succeeded.
+
+This verifies deterministic same-runtime outputs for the pinned official source. A JSON-versus-SQLite cross-format identity audit and safe publishing integration are still outstanding; no public JSON files are released.
 
 ## Acceptance gates before merging or publishing
 
-1. Verify an official full `AllPrintings.json.xz` download and exact upstream checksum.
-2. Execute the full JSON build on the GitHub runner, compare source/JSON projections, and
-   record set/card/token counts, resulting sizes, hashes and peak runtime resources.
-3. Reproduce the build and compare logical content and package hashes in the same runtime.
-4. Cross-check selected printing UUIDs, multi-face relationships, Oracle IDs and legalities
-   against a same-date validated SQLite output, acknowledging format differences.
-5. Review whether the omitted fields are appropriate for deckbuilding users.
-6. Only after acceptance, separately approve release asset additions and website downloads,
-   avoiding duplicate temporary GitHub Actions storage.
+1. **PASS** — Official full `AllPrintings.json.xz` download and checksum verification.
+2. **PASS** — Full builder, independent source/output per-set comparison, counts, hashes, sizes, and memory/time measurements.
+3. **PASS** — Two byte-identical complete builds in one runner from the same verified archive.
+4. **PENDING** — Cross-check printing UUIDs, multi-face relationships, Oracle IDs and legalities against a same-date validated SQLite output, allowing for different schemas.
+5. **PENDING** — Independent review of excluded fields for deckbuilding/AI consumers.
+6. **PENDING** — Separately approve Release/website integration without doubling temporary GitHub Actions artifact storage.
 
 MTGJSON remains the upstream data source. This is an independent unofficial derivative,
 not an endorsement or official MTGJSON alternative.
