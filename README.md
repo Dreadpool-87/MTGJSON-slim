@@ -14,6 +14,8 @@ python slim.py download --directory downloads --report evidence/download.json
 python slim.py inventory --database downloads/AllPrintings.sqlite --report evidence/source.json
 ```
 
+**Default profile:** running `slim.py build` or `slim.py validate` without `--profile` now selects the main `profiles/v2_3.json`. You may still explicitly supply `--profile profiles/v2_2.json` to reproduce a historical build. GitHub's scheduled workflow explicitly uses 2.3. Neither command depends on the 7 November contract when using the main profile.
+
 `download` retrieves the compressed official SQLite archive and verifies its matching official SHA-256 before accepting it. It does not decompress it. The optional inventory command above requires an already decompressed source; use `xz -dk downloads/AllPrintings.sqlite.xz` after successful verification, or rely on the build's automatic source inventory.
 
 ```bash
@@ -65,7 +67,7 @@ The current [profile](profiles/v2_3.json) selects the fields, tables and lookup 
 
 The output contains **8 tables, 224 columns and 20 explicit indexes**.
 
-**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The existing 07nov information-preservation contract is **not changed**; `slim.py` applies only the three reviewed exclusions for profile 2.3. Older profile 2.2 remains reproducible. Excluding narrative text does **not** automatically authorize redistribution of the remaining MTG card texts.
+**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The active 2.3 profile has its own **independent, locked main schema** in [`contracts/main-profile-2.3.json`](contracts/main-profile-2.3.json), covering all 224 selected columns, indexes, source schema and relationships. It **does not depend on** the historical 7 November list or profile 2.2. The historical `contracts/07nov-fields.json` is kept unmodified for archived profile 2.2 and regression checks; it is not a user agreement. Older profile 2.2 remains reproducible. Excluding narrative text does **not** automatically authorize redistribution of the remaining MTG card texts.
 
 Every selected record, NULL, face relationship, card printing and language is preserved, including printed/original names and rules text. There is no English-only filter or card-type exclusion.
 

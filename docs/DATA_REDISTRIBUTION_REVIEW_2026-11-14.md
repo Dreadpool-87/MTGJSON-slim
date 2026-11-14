@@ -38,7 +38,7 @@ This is a project risk-and-permissions review of the proposed freely downloadabl
 
 ## Profile 2.3 clarification (14 November 2026)
 
-The maintainer explicitly decided to omit `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight` in profile 2.3. The original 2.2 reference and 07nov preservation safeguard remain intact. Both profiles were built from the same checksum-verified source and compared field by field: [GitHub Actions acceptance run #43570579132](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43570579132). All retained rows and values were identical.
+The maintainer explicitly decided to omit `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight` in profile 2.3. The original 2.2 profile and 07nov historical reference are retained, but the standalone main 2.3 profile is now validated against [`contracts/main-profile-2.3.json`](../contracts/main-profile-2.3.json) without reading those older files. Both profiles were built from the same checksum-verified source and compared field by field: [GitHub Actions acceptance run #43570579132](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43570579132). All retained rows and values were identical.
 
 The proposed public dataset **no longer contains these two narrative flavor-text columns or the story spotlight flag**, but still includes Oracle/gameplay card text, original and printed rule text, rulings, and other third-party data. **The public distribution decision remains NOT CLEARED.** This selective removal does not resolve the bulk republication question.
 

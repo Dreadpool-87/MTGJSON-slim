@@ -98,7 +98,7 @@ class NamedConsumerQueries(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);source=root/'source.sqlite';out=root/'out.sqlite'
-            p=json.loads((ROOT/'profiles/v2_2.json').read_text())
+            p=json.loads((ROOT/'profiles/v2_3.json').read_text())
             with sqlite3.connect(source) as c:
                 for kind in ['table','index']:
                     for typ,_,_,sql in p['source_schema']:
