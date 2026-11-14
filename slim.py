@@ -166,17 +166,17 @@ def check_profile(p):
                 "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type,name")]
             if actual != rows:
                 raise ValueError('profile source schema is not canonical')
-            # Historical 07Nov preservation guard applies to archived profile 2.2
+            # Historical 7 November 2026 preservation guard applies to archived profile 2.2
             # only. The active 2.3 uses the independent locked selection above.
             contract = p.get('historical_contract', {})
             if p['version'] == '2.2':
                 try:
-                    reference_path = Path(__file__).resolve().parent / 'contracts' / '07nov-fields.json'
+                    reference_path = Path(__file__).resolve().parent / 'contracts' / 'historical-2026-11-07-field-baseline.json'
                     reference = json.loads(reference_path.read_text())['tables']
                 except (OSError, ValueError, KeyError) as e:
                     raise ValueError('historical reference contract unavailable') from e
                 if contract != reference:
-                    raise ValueError('historical reference contract differs from fixed 07Nov reference')
+                    raise ValueError('historical reference contract differs from fixed historical 2026-11-07 reference')
             if not isinstance(contract, dict):
                 raise ValueError('invalid historical field contract')
             for table, fields in contract.items():
