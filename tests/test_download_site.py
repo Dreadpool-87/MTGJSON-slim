@@ -54,5 +54,19 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn('Open latest Release', self.html)
         self.assertIn("input.disabled = !asset", self.html)
 
+
+    def test_json_downloads_are_optional_and_verified(self):
+        self.assertIn('id="json-title"', self.html)
+        self.assertIn('JSON downloads', self.html)
+        for suffix in ('.json', '.json.xz', '.json.zst', '.json.zip'):
+            self.assertIn('data-json-extension="' + suffix + '"', self.html)
+        self.assertIn('aria-disabled="true"', self.html)
+        self.assertIn("asset.name + '.sha256'", self.html)
+        self.assertIn("item.name.startsWith('AllPrintings-slim-')", self.html)
+        self.assertIn("item.browser_download_url.startsWith(prefix)", self.html)
+        self.assertIn("link.removeAttribute('aria-disabled')", self.html)
+        self.assertIn("JSON is not yet included in the latest public Release.", self.html)
+
+
 if __name__ == '__main__':
     unittest.main()
