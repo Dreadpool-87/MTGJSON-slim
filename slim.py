@@ -329,6 +329,10 @@ def build(archive, expected, profile_path, output_dir, tool_commit):
             if Path(name).name != name:
                 raise ValueError('invalid manifest path')
             verify(output_dir / name, artifact['sha256'])
+            checksum_sidecar = output_dir / (name + '.sha256')
+            expected_line = f"{artifact['sha256']}  {name}\n"
+            if not checksum_sidecar.is_file() or checksum_sidecar.read_text() != expected_line:
+                raise ValueError(f'invalid checksum sidecar for {name}')
         db_path = output_dir / m['output']['sqlite']['name']
         with lzma.open(output_dir / m['output']['archive']['name'], 'rb') as f:
             if hashlib.file_digest(f, 'sha256').hexdigest() != m['output']['sqlite']['sha256']:
@@ -361,7 +365,11 @@ def build(archive, expected, profile_path, output_dir, tool_commit):
             shutil.copyfileobj(src, dst, 1024 * 1024)
         output = {k: {'name': path.name, 'sha256': digest(path), 'size_bytes': path.stat().st_size}
                   for k, path in [('sqlite', db), ('archive', compressed)]}
-        Path(str(compressed) + '.sha256').write_text(f'{output["archive"]["sha256"]}  {compressed.name}\n')
+        # Publish-ready local package: uncompressed SQLite and lossless XZ, each with a checksum.
+        for key, path in [('sqlite', db), ('archive', compressed)]:
+            Path(str(path) + '.sha256').write_text(
+                f'{output[key]["sha256"]}  {path.name}\n'
+            )
         manifest = {'upstream': {'url': UPSTREAM, 'checksum_url': UPSTREAM + '.sha256',
                     'version': version, 'date': date, 'archive_sha256': expected.lower(),
                     'archive_size_bytes': Path(archive).stat().st_size, 'sqlite_sha256': digest(source),

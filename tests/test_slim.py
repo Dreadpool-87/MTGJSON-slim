@@ -153,11 +153,33 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(m['profile_version'],'test-1')
         self.assertEqual(m['tool_commit'],'a'*40)
         archive=out/m['output']['archive']['name']
-        self.assertEqual(lzma.decompress(archive.read_bytes()),(out/m['output']['sqlite']['name']).read_bytes())
+        db=out/m['output']['sqlite']['name']
+        self.assertEqual(lzma.decompress(archive.read_bytes()), db.read_bytes())
+        for artifact in m['output'].values():
+            filename=artifact['name']
+            sidecar=out/(filename+'.sha256')
+            self.assertEqual(sidecar.read_text(), f"{artifact['sha256']}  {filename}\n")
+            self.assertEqual(hashlib.sha256((out/filename).read_bytes()).hexdigest(), artifact['sha256'])
+        with sqlite3.connect(db) as c:
+            self.assertEqual(c.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
         self.assertEqual(slim.build(self.archive,self.digest,self.profile_path,out,'a'*40)['status'],'UNCHANGED')
         archive.write_bytes(archive.read_bytes()+b'tampered')
         with self.assertRaisesRegex(ValueError,'checksum'):
             slim.build(self.archive,self.digest,self.profile_path,out,'a'*40)
+
+    def test_reject_missing_or_tampered_distribution_sidecars(self):
+        for field in ['sqlite', 'archive']:
+            for tamper in ['missing', 'changed']:
+                out=self.root/f'package-{field}-{tamper}'
+                m=slim.build(self.archive,self.digest,self.profile_path,out,'a'*40)['manifest']
+                name=m['output'][field]['name']
+                sidecar=out/(name+'.sha256')
+                if tamper=='missing':
+                    sidecar.unlink()
+                else:
+                    sidecar.write_text('0'*64+'  '+name+'\\n')
+                with self.subTest(field=field,tamper=tamper), self.assertRaisesRegex(ValueError,'invalid checksum sidecar'):
+                    slim.build(self.archive,self.digest,self.profile_path,out,'a'*40)
 
     def test_reject_changed_tool_and_missing_printed_name(self):
         out=self.root/'package';slim.build(self.archive,self.digest,self.profile_path,out,'a'*40)
