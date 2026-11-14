@@ -173,3 +173,33 @@ Tables, rows and indexes are rebuilt in defined order, with a fixed page size an
 **Powered by [MTGJSON](https://mtgjson.com/).** This is an independent, unofficial community project, not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
 
 The converter uses the official MTGJSON `AllPrintings` dataset; its source version and checksums are recorded in each Release manifest. The repository's [MIT license](LICENSE) covers our own converter code. Upstream copyright and other data rights remain with their respective owners. See the [MTGJSON license](https://mtgjson.com/license/), the bundled [MTGJSON MIT notice](MTGJSON_LICENSE.txt) and our [third-party notices](THIRD_PARTY_NOTICES.md).
+
+
+## AtomicCards-slim B1 — independent third download family
+
+AtomicCards is a card-name/Oracle-oriented dataset, NOT a printing-level or standalone token database. It complements but cannot replace AllPrintings JSON/SQLite. The separate source is the official [AtomicCards.json.xz](https://mtgjson.com/api/v5/AtomicCards.json.xz).
+
+The [Atomic profile contract](contracts/atomic-b1.json) is based on a full-source independent research audit (MTGJSON 5.3.0+20261114). It removes exactly three card properties:
+
+- **purchaseUrls**: seller redirect links only; external identity and SKU fields remain intact.
+- **convertedManaCost**: deprecated, fully verified equivalent of retained **manaValue**.
+- **faceConvertedManaCost**: deprecated, fully verified equivalent of retained **faceManaValue**.
+
+The deprecated aliases are removed only when an exact JSON-type and value equality check against the modern field succeeds. All other known source properties remain, including all foreignData translated names, foreign SKU identifiers, legalities, rulings, multi-face relationships, related tokens and spellbooks, Commander and mana-production data. Every retained nested value is independently checked against the source; source schema drift fails closed. Existing consumers of deprecated names must switch to modern keys.
+
+The third, separate GitHub Release series (tags starting with **atomic-slim-**) offers:
+
+| Download asset | Function |
+| --- | --- |
+| AtomicCards-slim-<source-version>-atomic-b1.json | Direct-use JSON |
+| Same filename + .xz | Compact lossless XZ |
+| Same filename + .zst | Zstandard for fast extraction |
+| Same filename + .zip | Single-file ZIP |
+| Four matching .sha256 files | Per-format SHA-256 checksums |
+| atomic-manifest.json | Profile, source, counts and independent audit status |
+| MTGJSON_LICENSE.txt | Original upstream copyright/license |
+
+The [Atomic weekly workflow](.github/workflows/atomic-weekly.yml) verifies the official downloaded SHA-256, builds a versioned profile, performs independent full-source retention verification, and decompresses all formats to confirm identical raw JSON bytes. Draft publication is allowed only after verification, without replacing the existing SQLite latest Release or the AllPrintings JSON series. Release candidates are not committed to git.
+
+This is data for external AI deckbuilding tools, not a game rules engine, token database, printing resolver or proof that an app can ingest the entire JSON file.
+
