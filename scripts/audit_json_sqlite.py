@@ -71,6 +71,7 @@ def audit(json_package, sqlite_package, report):
     result = {"status": "PASS", "upstream": {"version": version_date[0], "date": version_date[1]},
               "json_sha256": jm["output"]["json"]["sha256"],
               "sqlite_sha256": sm["output"]["sqlite"]["sha256"],
+              "comparison_target": sm.get("comparison_target", "validated-slim-sqlite"),
               "counts": {"cards": 0, "tokens": 0},
               "mismatches": {}, "sample_details": []}
     with sqlite3.connect(sqlpath.resolve().as_uri() + "?mode=ro", uri=True) as db:
