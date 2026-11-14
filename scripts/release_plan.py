@@ -77,10 +77,10 @@ def decide(current, previous=None, enabled=False):
     new = _validated_content(current)
     tag = 'slim-' + current['upstream']['date'] + '-' + new['fingerprint'][:16]
     if not enabled:
-        action, reason = 'BLOCKED', 'Public redistribution approval is not configured'
+        action, reason = 'BLOCKED', 'Public release publishing is disabled in this workflow'
         changes = []
     elif previous is None:
-        action, reason, changes = 'PUBLISH', 'First approved release', ['initial']
+        action, reason, changes = 'PUBLISH', 'First validated public release', ['initial']
     else:
         old = _validated_content(previous)
         changes = sorted(set(new['tables']) ^ set(old['tables']))

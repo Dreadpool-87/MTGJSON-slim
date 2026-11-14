@@ -1,8 +1,8 @@
-# Third-party notices, branding and distribution gate
+# Third-party notices, branding and public data distribution
 
 ## Scope
 
-This repository contains independent Python converter code and documentation under the repository's [MIT LICENSE](LICENSE). The code license **must not be confused** with an unrestricted license to every MTG card name, rules text, illustration, logo, or piece of upstream data. Source provenance, required notices and redistribution permissions must be reviewed separately before a public database Release or automated publishing workflow is authorized.
+This repository contains independent Python converter code and documentation under the repository's [MIT LICENSE](LICENSE). The code license **must not be confused** with an unrestricted license to every MTG card name, rules text, illustration, logo, or piece of upstream data. Source provenance and all required notices must be preserved. The maintainer enabled public Release attempts on 2026-11-14 despite unresolved third-party redistribution scope; this does not establish legal permission.
 
 ## MTGJSON — source, attribution and license
 
@@ -11,7 +11,7 @@ This repository contains independent Python converter code and documentation und
 - Official brand assets and usage conditions: https://mtgjson.com/brand-assets/
 - Upstream project license reference: https://github.com/mtgjson/mtgjson/blob/master/LICENSE.txt
 
-The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to any permitted derivative distribution. An authorized GitHub Release additionally carries the complete upstream MIT notice as `MTGJSON_LICENSE.txt`.
+The MTGJSON site publishes MIT license terms, including the copyright notice **Copyright © 2018–Present, Zach Halpern** (upstream repository refers to Zachary Halpern). MIT's copyright and permission notices must be included with copies or substantial portions of the licensed material. Keep attribution and provenance attached to derived distributions. GitHub Releases carry the upstream MIT notice as `MTGJSON_LICENSE.txt`; this notice does not itself establish Wizards' or partners' permission.
 
 **Powered by [MTGJSON](https://mtgjson.com/).** This is an independent community project and is **not affiliated with or endorsed by MTGJSON**.
 
@@ -38,18 +38,18 @@ Suggested project status statement: **“MTGJSON-slim is an independent, unoffic
 
 Do **not** assert that the project is definitively “Fan Content permitted under the Fan Content Policy” without first establishing that the specific proposed distribution qualifies. Preserve applicable original notices and check the current policies before publication.
 
-**2026-11-14 rights review outcome: NOT CLEARED.** Read [the documented source review, approval criteria and unsent permission inquiries](docs/DATA_REDISTRIBUTION_REVIEW_2026-11-14.md). Keep the public-release approval variable disabled until the required written clarifications are received and evaluated.
+**2026-11-14 rights review outcome: NOT CLEARED.** Read [the documented source review and unsent permission inquiries](docs/DATA_REDISTRIBUTION_REVIEW_2026-11-14.md). The maintainer chose to attempt public distribution without written confirmations, accepting that takedown, complaints or legal claims may follow. Do not represent this as permission or approval by Wizards, MTGJSON or third-party data providers.
 
-## Public database distribution is deliberately disabled
+## Public database distribution enabled by maintainer
 
 At the time of this documentation:
 
-- The repository rebuilds a verified slim SQLite weekly, checks that its lossless XZ copy reproduces the same bytes, and uploads **verification reports only** by default; no database files are committed.
-- The publishing workflow is **inactive by default**. The repository variable `MTGJSON_PUBLIC_DISTRIBUTION_APPROVED` must be explicitly set to `true` only after the maintainer has documented redistribution rights for the MTGJSON-derived dataset and its third-party content. The variable alone does not grant permission.
-- If authorized, a changed, verified dataset can be published as a draft-first GitHub Release, with the previous stable Release preserved on failure. Without authorization, public release assets are not uploaded.
-- A proposed public Release, mirror or automated distribution needs a **separate rights/licensing review and explicit maintainer authorization**. Assess distribution terms for MTGJSON, Wizards and any other contributors to included material; document the decision and required notices.
+- The repository rebuilds a verified slim SQLite weekly, checks that XZ decompresses to the same bytes, and retains verification reports; no database files are committed to Git source history.
+- The maintainer has explicitly enabled public GitHub Releases in the workflow (`PUBLICATION_ENABLED: 'true'`). This is a technical setting **only**, not a legal rights certification. It can be reverted by setting it to `false`.
+- Only a changed, source-verified dataset may be published as a draft-first GitHub Release; the previous stable Release remains available on failure. The first actual public Release must be verified separately.
+- Public release rights remain uncertain. Resolve provider-specific redistribution terms and respond to credible complaints promptly; the maintainer's risk acceptance is not a substitute for rightsholder permission.
 - A source and database SHA-256 prove byte identity, **not** permission to republish, authenticity of all included card facts, or legal compliance.
 
-When allowed to distribute, include source URL, upstream version/date, upstream SHA-256, converter tool commit, profile SHA-256, build runtime, output SHA-256, generation/validation status, attribution/license notices, independent-project disclaimer and rights-review record in the provenance package.
+Each published Release must include source URL, upstream version/date and SHA-256, converter tool commit, profile SHA-256, runtime, output checksums, the upstream MIT notice and independent-project disclaimer. This metadata proves provenance, **not** rightsholder consent.
 
 See [Profile 2.2 retained and omitted data](docs/PROFILE_2_2_DATA_INVENTORY.md) and the [acceptance evidence](docs/acceptance-profile-2.2.md).
