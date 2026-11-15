@@ -38,6 +38,29 @@ class FieldSelectionTests(unittest.TestCase):
         self.src.write_bytes(lzma.compress(json.dumps(self.source).encode("utf-8")))
         self.dst.write_text(json.dumps(self.output), encoding="utf-8")
 
+    def test_independent_audit_rejects_invalid_input_and_output_root(self):
+        valid = self.source
+        for target in ("source", "output"):
+            for kind in ("unknown", "duplicate", "missing", "wrong type"):
+                with self.subTest(target=target, kind=kind):
+                    self.write()
+                    doc = self.source if target == "source" else self.output
+                    raw = json.dumps(doc)
+                    if kind == "unknown":
+                        raw = raw[:-1] + ',"metadataExtra":true}'
+                    elif kind == "duplicate":
+                        raw = raw[:-1] + ',"meta":{}}'
+                    elif kind == "missing":
+                        raw = json.dumps({"data": doc["data"]})
+                    else:
+                        raw = json.dumps({"meta": [], "data": doc["data"]})
+                    if target == "source":
+                        self.src.write_bytes(lzma.compress(raw.encode("utf-8")))
+                    else:
+                        self.dst.write_text(raw, encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "root"):
+                        self.audit.audit(self.src, self.dst, self.report)
+
     def test_reviewed_fields_removed_while_rules_and_ids_preserved(self):
         result = self.audit.audit(self.src, self.dst, self.report)
         self.assertEqual(result["status"], "PASS")
