@@ -1,4 +1,4 @@
-# MTGJSON-slim — current profile 2.2 acceptance
+# MTGJSON-slim — historical profile 2.2 acceptance
 
 **Historical status: technical acceptance PASS on the verified MTGJSON `5.3.0+20261113` source.** This report documents profile 2.2 as tested at the time; the [current README](../README.md) describes the active profile, scheduler and public Releases.
 

@@ -1,217 +1,61 @@
 # MTGJSON-slim
 
-## [⬇ Download MTGJSON-slim — Choose your format](https://dreadpool-87.github.io/MTGJSON-slim/)
+**Smaller, source-verified Magic: The Gathering datasets for deckbuilding tools, collection apps and AI-assisted workflows.** Built independently from official [MTGJSON](https://mtgjson.com/) data; not affiliated with MTGJSON or Wizards of the Coast.
 
-**Choose among three published download families:** indexed **AllPrintings SQLite**, printing-level **AllPrintings JSON**, and card-name/Oracle-oriented **AtomicCards JSON**. Each has raw, XZ, Zstandard and ZIP downloads with per-file SHA-256 checksums. The [download page](https://dreadpool-87.github.io/MTGJSON-slim/) selects real published assets and enables a format only when its matching checksum sidecar is available. No GitHub account is required to download.
+**[Download datasets](https://dreadpool-87.github.io/MTGJSON-slim/)** · [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases) · [Usage guide](docs/USAGE.md) · [Development guide](docs/DEVELOPMENT.md)
 
-MTGJSON-slim is an independent, unofficial tool that turns official [MTGJSON](https://mtgjson.com/) **AllPrintings and AtomicCards** sources into smaller, validated **SQLite and JSON card data**. It is designed as a reliable data source for other applications, especially AI-assisted Magic: The Gathering tools. AtomicCards complements the printing-level downloads; it does not replace them or provide a standalone token database.
+## Choose a dataset
 
-## Why does a slim version exist?
+| Dataset | Best for | What it contains |
+| --- | --- | --- |
+| **AllPrintings SQLite** | Indexed searches, local tools and collection/printing matching | Selected printing and token records, names, identifiers, rules, legalities, rulings and indexes |
+| **AllPrintings JSON** | Applications that prefer JSON and need individual card printings or tokens | Independent, source-derived printing and token data grouped by set |
+| **AtomicCards JSON** | Card-name and Oracle-oriented lookups | Cards grouped by name, with rules, identities, translated data and relationships |
 
-The full MTGJSON database serves many purposes beyond gameplay and deck construction. A deckbuilder, collection tool or AI agent usually does not need product listings, purchase links, sealed-product and booster information, source deck lists, separate foreign-name translation tables or narrative flavor-text metadata.
+**Important:** AtomicCards is **not** a replacement for AllPrintings when you need individual printing or standalone token records. The formats have different source schemas; matching selected fields does **not** establish complete JSON/SQLite equivalence.
 
-MTGJSON-slim removes such less relevant data to reduce download and storage overhead while keeping the information needed to **identify cards accurately and query their gameplay-related properties**. The current [profile 2.3](profiles/v2_3.json) retains **8 tables, 224 columns and 20 explicit lookup indexes**: card and token printings, printed names, mana and rules text, multi-face relationships, Scryfall/Oracle and other identifiers, format legalities, dated rulings, sets and source metadata.
+## Download formats
 
-**Slim does not mean guessed or simplified card data.** Retained values come directly from the checksum-verified official source. Original non-English card-printing records are still included; excluding the separate foreign-name translation table is **not** an English-only filter. The conversion validates schema, identities and relationships and stops on unreviewed upstream schema changes instead of silently dropping data. See the [complete retained/omitted field inventory](docs/PROFILE_2_3_DATA_INVENTORY.md).
+Every dataset has four lossless download options, plus a separate **SHA-256 checksum** for each file.
 
-## What is it for?
-
-- **AI agents and AI-assisted deckbuilders:** look up real card identities, mana costs, rules text, faces and available printings rather than relying on invented card information.
-- **Collection and CSV-based deck tools:** provide a reference database for mapping owned-card entries to verified card and printing identities.
-- **Deck validators and swap advisors:** support card lookup, deck legality checks and card-replacement analysis using recorded format legalities and rulings.
-- **Search tools and integrations:** query names, printed names, sets, UUIDs, Scryfall IDs and Oracle IDs through the retained indexes.
-
-**Important limitation:** this project supplies card data, **not** a finished deckbuilder, gameplay simulator, AI model or complete Magic rules engine. Applications using it must still implement their own deck construction, format checks and rules logic. Any legality snapshot is only as current as the underlying MTGJSON release.
-
-The SQLite converter uses Python 3.11+ without pip dependencies and profile [2.3](profiles/v2_3.json). The independent AllPrintings JSON and AtomicCards builders use the pinned streaming parser in `requirements-json.txt`. Verified datasets are distributed through the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) and [GitHub Releases](https://github.com/Dreadpool-87/MTGJSON-slim/releases).
-
-## Published JSON direct-source release pipeline
-
-The AllPrintings JSON route downloads the official `AllPrintings.json.xz`, checks its official MTGJSON checksum, streams its set/card/token records into a reduced `AllPrintings-slim.json` and verifies the exact retained values against its independent source. **JSON is not reconstructed from SQLite.**
-
-JSON downloads use four lossless formats: raw `.json`, `.json.xz`, `.json.zst` and `.json.zip`, each with its own SHA-256 sidecar. A [full same-date acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43618066105) compared the 14 November JSON and SQLite independently built from the matching official `5.3.0+20261114` sources: **115,957 cards, 9,565 tokens, all printing UUIDs and checked intersecting gameplay fields matched, with no unexplained differences**. Some token set codes differ by official source representation, verified through `sets.tokenSetCode`. The independent removed-field audit also passed.
-
-**Separate release series:** JSON releases use `json-slim-...` tags, rather than modifying immutable SQLite releases or replacing GitHub's existing latest SQLite release. The download website checks for actual JSON assets and checksums before activating those links. The weekly JSON job is scheduled for Tuesday 07:20 Europe/Brussels, uses a data-only fingerprint so metadata-only changes are not republished, and transfers only the compressed verified JSON (~26 MB in the pinned test) between jobs. [The successful public build and publication run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43619556887) produced the [14 November JSON Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/json-slim-2026-11-14-f0248315f9343a2f). Source acceptance, selected same-date cross-format checks and all four lossless formats passed; this does not imply full JSON/SQLite information parity.
-
-See [the complete JSON selection, accepted limitations and release evidence](docs/JSON_DIRECT_SOURCE_PREVIEW.md).
-
-## Requirements and use
-
-For the **SQLite converter**: Python 3.11+ on Linux, SQLite (bundled with Python), and sufficient disk space for source, temporary files and output; no pip dependencies. For either **JSON builder**, install `python -m pip install -r requirements-json.txt`. All GitHub workflows use **Python 3.14** and explicitly check that its optional standard-library `compression.zstd` module is available. Zstandard packaging and verification then run directly in Python without installing a separate `zstd` executable or Python package. On older local Python versions, the same packaging tools retain the system `zstd` CLI fallback.
-
-For the **complete regression gate**, install the JSON requirements, have Node.js available and provide either Python 3.14 with `compression.zstd` or the legacy `zstd` executable, then run `python scripts/run_regression_tests.py`. This executes the entire suite, including the website JavaScript controls, and returns nonzero for failed, skipped or undiscovered tests. Every PR runs this gate, including auditor-only changes. All three weekly workflows use it; the SQLite converter itself remains stdlib-only.
-
-Run from a clean checkout at the exact tool commit recorded in the manifest:
-
-```bash
-python -m unittest discover -s tests -v
-python slim.py download --directory downloads --report evidence/download.json
-python slim.py inventory --database downloads/AllPrintings.sqlite --report evidence/source.json
-```
-
-**Default profile:** running `slim.py build` or `slim.py validate` without `--profile` now selects the main `profiles/v2_3.json`. You may still explicitly supply `--profile profiles/v2_2.json` to reproduce a historical build. GitHub's scheduled workflow explicitly uses 2.3. Neither command depends on the 7 November contract when using the main profile.
-
-`download` retrieves the compressed official SQLite archive and verifies its matching official SHA-256 before accepting it. It does not decompress it. The optional inventory command above requires an already decompressed source; use `xz -dk downloads/AllPrintings.sqlite.xz` after successful verification, or rely on the build's automatic source inventory.
-
-```bash
-python slim.py build \
-  --archive downloads/AllPrintings.sqlite.xz \
-  --sha256 "$(cat downloads/AllPrintings.sqlite.xz.sha256)" \
-  --profile profiles/v2_3.json --output-dir output \
-  --tool-commit "$(git rev-parse HEAD)" --report evidence/build.json
-```
-
-Outputs include a version-specific **uncompressed `.sqlite` and losslessly compressed `.sqlite.xz`**, **a SHA-256 sidecar for each file**, a provenance manifest, a validation report and a full upstream schema/count inventory. The build verifies the archive **before** decompression, prepares in a temporary directory, and exposes the package only after validation and compression succeed. Reports must live outside the package and must not alias inputs.
-
-For a checksum-only upstream check, use `download --previous-sha256 <prior-official-digest>` with the other download arguments; `UNCHANGED` skips the archive download. Repeat the same build command to detect unchanged upstream/profile/tool inputs in an existing package. Existing packages are rechecked against the verified source projection and their compressed/database bytes before returning `UNCHANGED`. A changed input/profile/tool requires a new output directory. Nothing is silently overwritten.
-
-For independent validation, find the version-specific output filename in `output/manifest.json`:
-
-```bash
-python slim.py validate --database output/AllPrintings-slim-VERSION-profile-2.3.sqlite \
-  --source downloads/AllPrintings.sqlite --profile profiles/v2_3.json \
-  --report evidence/validation.json
-```
-
-All commands write JSON reports and return nonzero on failure. A protected report-path collision returns a JSON error on stdout without writing that path. Without `--source`, validation checks the expected schema, SQLite integrity, identity keys and relationships; with `--source`, it additionally compares the count and deterministic logical digest of every projected row, including duplicate multiplicity and NULLs.
-
-## Download formats and selector
-
-The mobile-friendly [MTGJSON-slim download page](https://dreadpool-87.github.io/MTGJSON-slim/) is served from [`docs/index.html`](docs/index.html) using GitHub Pages with branch **main** and folder **/docs**. The page uses the public GitHub API to show real file sizes from the **latest Release** and links directly to its assets. It does not store, rehost or transform database files. No separate site repository or paid hosting is required. To review or troubleshoot the existing deployment, open **Settings → Pages**; this is not required for downloading.
-
-When a validated, changed dataset is published, **all four formats** appear in the **same MTGJSON-slim GitHub Release**:
-
-| Planned asset | Purpose |
+| Format | Choose it when… |
 | --- | --- |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite` | Uncompressed, directly usable SQLite database |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.sha256` | SHA-256 verification for the uncompressed database |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz` | Identical SQLite content compressed with XZ for smaller downloads |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.xz.sha256` | SHA-256 verification for the XZ database |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zst` | Zstandard level 9: fast, compact decompression |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zst.sha256` | SHA-256 verification for Zstandard |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zip` | Standard ZIP with one SQLite file, convenient for Android and Windows |
-| `AllPrintings-slim-<source-version>-profile-2.3.sqlite.zip.sha256` | SHA-256 verification for ZIP |
-| `manifest.json` | Source version/checksum, profile version, output sizes/hashes, tooling and runtime provenance |
-| `MTGJSON_LICENSE.txt` | Upstream MTGJSON copyright and MIT license notice |
+| **XZ** (`.xz`) | You want a smaller download |
+| **Zstandard** (`.zst`) | Your application supports fast decompression |
+| **ZIP** (`.zip`) | You want straightforward extraction on common devices |
+| **Raw** (`.sqlite` or `.json`) | Your application needs an immediately usable file |
 
-The core converter builds the authoritative `.sqlite` and `.sqlite.xz`. The GitHub release job adds `.sqlite.zst` and `.sqlite.zip` **only after** the original candidate is validated, so temporary Actions artifact storage is not multiplied. Each download has a separate SHA-256 sidecar; XZ, Zstandard and ZIP are checked to unpack to the **exact same SQLite bytes**. The ZIP contains exactly one `.sqlite` file. Compression does not alter the selected eight tables, 224 columns or indexes. The converter itself still needs no Python packages; the publisher uses Python 3.14's native Zstandard module.
+Use the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) to select a dataset and format; **you do not need Python or a GitHub account just to download it**. The website enables download options only when the matching published file and checksum are available. Verify the SHA-256 before trusting a download; see [Usage](docs/USAGE.md).
 
-All three download families share the same streaming Zstandard helper: level 9, a frame checksum and a single-thread configuration. It prefers native Python support and verifies the complete decompressed SHA-256 before trusting an archive. Native and CLI archives can differ in compressed bytes, size and checksum because framing or library versions differ; they must still unpack to the identical original SQLite/JSON bytes. Existing Release files are not recompressed or overwritten when the workflow runtime is upgraded.
+## What is preserved?
 
-**Release automation:** After validation, the workflow compares retained data and index definitions to the latest published Release. It creates and verifies a draft with the ten package assets only when the data meaningfully changed, then makes that Release public. Failed checks prevent publication and the previously published Release remains available. Maintainers can disable future publication by changing `PUBLICATION_ENABLED` to `false` in the workflow.
+All datasets are generated from separately checksum-verified official sources. They retain the reviewed card identities and gameplay fields needed for their intended purposes, including rules, format legalities and relationships. Validation failures block publishing. SQLite and AtomicCards reject unexpected schema changes; the AllPrintings JSON policy keeps unexcluded source fields rather than silently dropping them.
 
-A `.sql` export is a text script for reconstructing a database, not a directly queryable SQLite file. `psql` is the PostgreSQL client and a `.psql` extension is not a universal database container. The project intentionally **does not** add SQL or PostgreSQL exports; they offer no clear benefit for the primary SQLite consumers and would add build/test complexity.
+The datasets are **intentionally not identical**: SQLite profile 2.3 and AllPrintings JSON omit reviewed nonessential fields (including some translation or product data), while AtomicCards B1 preserves nested translations but removes seller links and two verified redundant mana aliases. For the **exact** kept/removed fields, consult the linked inventories and [data policy](docs/DEVELOPMENT.md). These files are data sources, **not** a complete MTG rules engine, deckbuilder, ownership database or AI model.
 
-## Current SQLite data profile
+## Use or build locally
 
-The current [profile](profiles/v2_3.json) selects the fields, tables and lookup indexes preserved from official MTGJSON SQLite data. It locks the source field names/types and index definitions from MTGJSON `5.3.0+20261113`. It rejects unreviewed additions, removals, type changes and index changes; a fully verified, order-only rearrangement of the existing `sets` columns observed in `5.3.0+20261114` is explicitly permitted. The selected output fields and 20 indexes remain locked.
+Downloads are ready to use after extraction. To build from official sources, use the individual instructions for [SQLite, AllPrintings JSON and AtomicCards](docs/USAGE.md); you do not need to run all three pipelines.
 
-The output contains **8 tables, 224 columns and 20 explicit indexes**.
+Our GitHub Actions builds use **Python 3.14**, including its native Zstandard module. Older local Python versions can use the `zstd` command-line fallback for Zstandard packaging. The SQLite converter itself remains standard-library-only; the JSON converters additionally require the pinned streaming parser.
 
-**Profile 2.3 consciously drops three non-gameplay columns** relative to 2.2: `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. Current rules (`cards.text`, `tokens.text`, `cardRulings.text`), printed/original rule text, alternative card names, identities, relationships and all indexes remain intact. The active 2.3 profile has its own **independent, locked main schema** in [`contracts/main-profile-2.3.json`](contracts/main-profile-2.3.json), covering all 224 selected columns, indexes, source schema and relationships. It **does not depend on** the historical 7 November list or profile 2.2. The historical [`contracts/historical-2026-11-07-field-baseline.json`](contracts/historical-2026-11-07-field-baseline.json) is preserved for archived profile 2.2 and regression checks. Older profile 2.2 remains reproducible.
+## Documentation
 
-Every selected record, NULL, face relationship, card printing and language is preserved, including printed/original names and rules text. There is no English-only filter or card-type exclusion.
-
-| Area | Current policy |
+| Guide | Contents |
 | --- | --- |
-| Cards and tokens | Keep identities, set/collector numbers, names, Oracle and printed text, mana/type information, multiple faces, relationships, flags, printing and artwork/reference metadata |
-| External identifiers, legalities and rulings | Keep all selected external IDs, per-format legality information and card-linked rulings |
-| Sets and source metadata | Keep codes, set identities, dates, language metadata, source version/date and token-set links |
-| Removed data | Omit localized translation table `cardForeignData`, set-name translations, product/purchase/booster/deck-list tables and six packaging-related fields plus `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight` |
-| Source safety | Verify the official source checksum, pin the upstream schema and reject missing required fields, unknown schema changes or broken relationships |
-| Lookup policy | Use verified UUID/code identity indexes and non-unique Scryfall printing/Oracle-ID indexes where multi-face records share external IDs |
+| [Usage](docs/USAGE.md) | Downloads, SHA-256 checks, extraction and CLI examples |
+| [Development & automation](docs/DEVELOPMENT.md) | CI, schedules, release safety, reproducibility and troubleshooting |
+| [SQLite profile 2.3 inventory](docs/PROFILE_2_3_DATA_INVENTORY.md) | Exact retained/omitted tables, columns and indexes |
+| [AllPrintings JSON source audit](docs/JSON_DIRECT_SOURCE_PREVIEW.md) | JSON selection, same-date comparisons and historical acceptance evidence |
+| [Historical SQLite profile 2.2 acceptance](docs/acceptance-profile-2.2.md) | Prior profile and test evidence |
+| [Third-party notices](THIRD_PARTY_NOTICES.md) | Source attribution, licenses and branding |
 
-Every retained value is copied directly from the verified source; no fuzzy matching, translation, Oracle-text reconstruction, rules inference or card-strength claims are added. For exact selections, see the [complete current SQLite data inventory](docs/PROFILE_2_3_DATA_INVENTORY.md).
+All three families have **separate, weekly verified release pipelines**, scheduled on Tuesdays (07:00 SQLite, 07:20 AllPrintings JSON, 07:40 AtomicCards; `Europe/Brussels`). GitHub may delay scheduled starts. Unchanged validated data are not republished.
 
-### Exact data retention and removal
+## License and attribution
 
-For an **exhaustive, table-by-table and field-by-field list** of what is kept and what is removed, read **[Profile 2.3 — retained and omitted SQLite data](docs/PROFILE_2_3_DATA_INVENTORY.md)**. It is checked against the actual versioned profile, not an approximate description.
-
-From 20 source tables, the output retains 8 and omits 12. The complete `cardForeignData` and `setTranslations` tables and sales, sealed-product, booster, deck-list and token-product tables are excluded. Within `cards` and `tokens`, excluded source fields are `boosterTypes`, `skuIds` and `sourceProducts` (three per table, six total), plus exactly `cards.flavorText`, `tokens.flavorText` and `cards.isStorySpotlight`. These three are non-gameplay narrative fields. Every field of the six other retained tables remains. Original non-English physical printing records and printed names are **not** removed. Schema pinning still checks all omitted upstream tables for drift.
-
-**Profile 2.3 real-data acceptance:** [the full GitHub-hosted comparison run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43570579132) passed for both profiles built from the same official archive. It confirmed all retained values and 20 indexes were identical; only the three reviewed columns disappeared. Raw SQLite: 282,390,528 → 276,037,632 bytes (**6,352,896 saved**); XZ: 49,264,112 → 47,118,052 bytes (**2,146,060 saved**). See [Profile 2.3 inventory and acceptance measurements](docs/PROFILE_2_3_DATA_INVENTORY.md). The first size figure describes full raw database output, not only the `isStorySpotlight` column.
-
-**Historical profile 2.2 verification:** two full local reproducible builds passed, plus a separate [real-data GitHub-hosted acceptance run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43516913604) where both the tests and real-data build jobs succeeded. Its official source checksum matched the local source. The raw SQLite/XZ hashes differ between local and GitHub runtimes, so cross-runtime byte reproducibility is **not claimed**; source-selected logical table contents matched in the preserved evidence. See [historical Profile 2.2 acceptance and limitations](docs/acceptance-profile-2.2.md); profile 2.3's independent same-source acceptance is documented above.
-
-The scheduled workflow is configured for **Tuesday at 07:00 Europe/Brussels** and rebuilds a fresh verified SQLite and derives its XZ copy. The [first public Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/slim-2026-11-13-8fd830df9bd26ec5) was published after a verified full-data build on 14 November 2026. Subsequent scheduled/manual runs publish only when selected data or indexes change.
-
-## Query audit
-
-```bash
-python benchmarks/query_audit.py --database path/to/database.sqlite \
-  --cases cases.json --create-cases --report benchmark.json --repeats 5
-```
-
-Use the same saved case file for every compared database. The audit records exact SQL/parameters, result counts/digests, plans for every sample, five warm-cache timing batches and medians, and per-index dbstat footprints. Missing footprint capability is reported as null plus an error, never as zero bytes. These are sampled lookup workloads with full result retrieval, not whole-database latency promises or cold-cache tests. Oracle cohorts include singleton, moderate and high-fanout IDs; printing samples include singleton and shared multi-face IDs. Unknown-ID cases are explicitly synthetic. No personal collection is required.
-
-These are reproducible **sampled** query measurements, not a guarantee that every lookup is faster. Read the [historical profile 2.2 acceptance report](docs/acceptance-profile-2.2.md) for actual timings and limitations.
-
-## Reproducibility and provenance
-
-Tables, rows and indexes are rebuilt in defined order, with a fixed page size and an SQLite `VACUUM`. XZ uses Python lzma preset 6. The manifest includes upstream URL/version/digests, profile version/digest, tool commit, output sizes/digests and Python/SQLite versions. Byte reproducibility is tested in the same runtime; it is not guaranteed across SQLite/liblzma versions. Logical projection comparison is runtime-independent for the pinned SQLite scalar types. Timing and peak RSS appear in the build report rather than the deterministic database.
-
-## Automation and troubleshooting
-
-**Weekly schedule:** Every **Tuesday at 07:00** in `Europe/Brussels` (CET/CEST). The [GitHub Actions verification workflow](.github/workflows/verify.yml) uses `cron: '0 7 * * 2'` with a named timezone, not a fixed UTC offset. GitHub can delay the exact start time, and scheduled workflows run only from the default branch. A public repository's scheduled workflows may be disabled by GitHub after 60 days without repository activity; review the workflow status if updates stop.
-
-**What runs:** On **every scheduled run** (and every manual run on the default branch), the workflow downloads and checksum-verifies the current official MTGJSON archive, rebuilds a fresh slim SQLite from the version-pinned profile, verifies it against the source, creates the XZ copy, checks that decompression reproduces the exact SQLite bytes and checks both SHA-256 sidecars. Pull requests run only the fixture tests. A source schema change, invalid checksum, broken index or relationship or validation failure stops the build; the previous published Release remains unchanged.
-
-**Change detection:** The newest successful published Release's manifest is compared with the newly built logical fingerprint. It includes all **retained data tables except the upstream `meta` row**, plus resulting SQL schema and indexes. Therefore an MTGJSON date/version-only change **does not** create another Release. A change in card/printing/ruling/legality/set data or schema/indexes **does**. This is a deliberate logical comparison, not a raw SQLite/XZ byte comparison. Each week is rebuilt and revalidated regardless of whether it is eventually published.
-
-**Verified release flow:** The normal build job has read-only repository permissions. A separate publishing job with write permission runs only after successful validation and a meaningful data change. It rechecks the uploaded package, generates and validates ZIP/Zstandard, creates a GitHub **draft Release** with exactly ten assets (four database variants, four SHA-256 sidecars, the manifest and the upstream `MTGJSON_LICENSE.txt`), verifies all ten assets are present and **only then publishes** the Release. No existing stable Release is overwritten; if any step fails, the old latest Release stays available. A failed draft may require manual cleanup before retrying. The release comparison fails closed on an unreadable or incompatible previous manifest.
-
-**Outputs and retention:** A no-change or failed build does not transfer a public database candidate. Verification JSON and the manifest are kept as GitHub Actions artifacts for **14 days**. A changed, verified database is transferred between jobs with **1-day** artifact retention and published as GitHub Release assets only after checks pass. The content selection remains slim: the same eight retained tables, 224 selected columns and explicit indexes. No SQL or PostgreSQL export is added.
-
-**Security and limitations:** Scheduled Actions executions may be delayed or disabled by GitHub after prolonged inactivity. The profile intentionally rejects unexpected upstream schema changes; an update requiring a new profile must be reviewed rather than silently dropping fields. For upstream provenance, copyright notices and licensing scope, read [third-party notices](THIRD_PARTY_NOTICES.md).
-
-- Checksum mismatch: stop. Do not replace the expected hash with the calculated one; official daily files may change during a download. Fetch a fresh matching official pair and verify again.
-- Schema mismatch: inspect the complete upstream inventory and review a new profile. Never auto-accept unknown columns.
-- Orphan/duplicate/integrity failure: preserve the report and investigate the source or transformation; do not bypass validation.
-- Existing directory: use a new versioned output path, or rerun with identical inputs for a fully verified reuse.
-- No space/timeout: provide more temporary disk or time. Failed staging directories are cleaned; source archives remain untouched.
-
-## Source and attribution
+**Powered by [MTGJSON](https://mtgjson.com/).** This independent project's code is [MIT-licensed](LICENSE); upstream data and card-related rights are governed separately. Every Release includes the upstream [MTGJSON license notice](MTGJSON_LICENSE.txt). See [third-party notices](THIRD_PARTY_NOTICES.md) for attribution, usage limitations and official branding terms.
 
 <a href="https://mtgjson.com/">
   <img src="https://mtgjson.com/images/assets/logo-mtgjson.svg" width="60" alt="MTGJSON logo" />
 </a>
-
-**Powered by [MTGJSON](https://mtgjson.com/).** This is an independent, unofficial community project, not affiliated with or endorsed by MTGJSON or Wizards of the Coast.
-
-The converter uses the official MTGJSON `AllPrintings` dataset; its source version and checksums are recorded in each Release manifest. The repository's [MIT license](LICENSE) covers our own converter code. Upstream copyright and other data rights remain with their respective owners. See the [MTGJSON license](https://mtgjson.com/license/), the bundled [MTGJSON MIT notice](MTGJSON_LICENSE.txt) and our [third-party notices](THIRD_PARTY_NOTICES.md).
-
-
-## AtomicCards-slim B1 — independent third download family
-
-AtomicCards is a card-name/Oracle-oriented dataset, NOT a printing-level or standalone token database. It complements but cannot replace AllPrintings JSON/SQLite. The separate source is the official [AtomicCards.json.xz](https://mtgjson.com/api/v5/AtomicCards.json.xz).
-
-The [Atomic profile contract](contracts/atomic-b1.json) is based on a full-source independent research audit (MTGJSON 5.3.0+20261114). It removes exactly three card properties:
-
-- **purchaseUrls**: seller redirect links only; external identity and SKU fields remain intact.
-- **convertedManaCost**: deprecated, fully verified equivalent of retained **manaValue**.
-- **faceConvertedManaCost**: deprecated, fully verified equivalent of retained **faceManaValue**.
-
-The deprecated aliases are removed only when an exact JSON-type and value equality check against the modern field succeeds. All other known source properties remain, including all foreignData translated names, foreign SKU identifiers, legalities, rulings, multi-face relationships, related tokens and spellbooks, Commander and mana-production data. Every retained nested value is independently checked against the source; source schema drift fails closed. Existing consumers of deprecated names must switch to modern keys.
-
-The third, separate GitHub Release series (tags starting with **atomic-slim-**) offers:
-
-| Download asset | Function |
-| --- | --- |
-| AtomicCards-slim-<source-version>-atomic-b1.json | Direct-use JSON |
-| Same filename + .xz | Compact lossless XZ |
-| Same filename + .zst | Zstandard for fast extraction |
-| Same filename + .zip | Single-file ZIP |
-| Four matching .sha256 files | Per-format SHA-256 checksums |
-| atomic-manifest.json | Profile, source, counts and independent audit status |
-| MTGJSON_LICENSE.txt | Original upstream copyright/license |
-
-The [Atomic weekly workflow](.github/workflows/atomic-weekly.yml) verifies the official downloaded SHA-256, builds a versioned profile, performs independent full-source retention verification, and decompresses all formats to confirm identical raw JSON bytes. Draft publication is allowed only after verification, without replacing the existing SQLite latest Release or the AllPrintings JSON series. Release candidates are not committed to git.
-
-AtomicCards is scheduled for Tuesday **07:40 Europe/Brussels**, after SQLite at **07:00** and AllPrintings JSON at **07:20**. All times follow Belgian daylight saving time; GitHub may delay scheduled runs. The [first successful Atomic publication](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43644365215) produced the [14 November Atomic B1 Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/atomic-slim-2026-11-14-44832732ccf261a8). A successful push build is not proof of a future timer execution.
-
-The Atomic builder and its independent auditor separately require exactly one root `meta` object and one root `data` object. Unknown, missing or repeated root fields block publication rather than disappearing during projection. Existing reviewed card/nested-field contracts remain enforced.
-
-New Atomic tag suffixes fingerprint **both retained data and the profile contract**, matching the release decision. A same-date contract-only change therefore cannot reuse the old data-only tag. Existing data-only Releases and manifests remain readable and unchanged; identical retained data and contract still produce `SKIP_UNCHANGED` even if upstream metadata or packaging changes.
-
-This is data for external AI deckbuilding tools, not a game rules engine, token database, printing resolver or proof that an app can ingest the entire JSON file.
-
