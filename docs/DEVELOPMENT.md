@@ -12,7 +12,7 @@ This document describes how the repository derives, checks and publishes **three
 | AllPrintings JSON (`json-slim-...`) | Official `AllPrintings.json.xz` | `slim_json.py` | Explicit JSON field-removal policy and independent field auditor |
 | AtomicCards JSON (`atomic-slim-...`) | Official `AtomicCards.json.xz` | `atomic_slim.py` | `contracts/atomic-b1.json` |
 
-All sources are individually downloaded and verified using their official SHA-256 sidecars. A successful conversion must match the *selected* official data; it is not sufficient to create parseable JSON or a SQLite file. Unknown or invalid upstream schema changes fail closed. Independent source/output auditors check the source-specific projections, including relationships and retained nested values where applicable.
+All sources are individually downloaded and verified using their official SHA-256 sidecars. A successful conversion must match the *selected* official data; it is not sufficient to create parseable JSON or a SQLite file. Schema policies are source-specific: SQLite and AtomicCards reject unexpected structure, while the AllPrintings JSON builder retains newly introduced fields unless explicitly excluded and uses independent source/output field checks. Invalid source data and failed validation block publishing; no format silently asserts unsupported cross-format parity.
 
 ### SQLite profile 2.3
 
