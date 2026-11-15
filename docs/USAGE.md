@@ -26,13 +26,15 @@ Keep the data file and its matching sidecar in the same directory when using thi
 
 ## 2. Prerequisites for local builds
 
-The workflow runners use Python 3.14. The SQLite converter itself is compatible with Python 3.11+ and requires no pip packages. The JSON builders use `ijson`, pinned in `requirements-json.txt`:
+Local builders are tested on Linux; native Windows builder support has not been verified. Downloaded SQLite/JSON files can still be used by compatible Windows applications. The SQLite builder imports the Unix-only `resource` module. The workflow runners use Python 3.14; the SQLite converter requires Python 3.11+ and no pip packages. The JSON builders use `ijson`, pinned in `requirements-json.txt`:
 
 ```bash
 python -m pip install -r requirements-json.txt
 ```
 
 For packaging Zstandard, Python 3.14 provides `compression.zstd` directly; when running older local Python, install the system `zstd` executable. ZIP uses Deflate. The *full* regression suite also needs Node.js for website behavior tests.
+
+AtomicCards source downloads and the complete regression gate also require the system `curl` executable. Downloads allow HTTPS only, at most five redirects, three retries, a 30-second connection timeout and a 360-second timeout per attempt. The destination filesystem must support hard links. Both source files are downloaded into temporary staging and checksum-verified before their final names appear; existing files or symlinks are never overwritten. Catchable transfer or publication failures clean up this invocation's files. Publishing two files is not a single filesystem transaction: an abrupt process termination can leave a verified sidecar without its archive. Preserve any unrelated files; inspect and remove only the orphan from that interrupted attempt before retrying in a clean directory.
 
 Use a clean checkout of the specific tool commit recorded in the output manifest. Ensure enough free space for the compressed source, extracted/temporary files and generated database. Generated files are never silently overwritten.
 

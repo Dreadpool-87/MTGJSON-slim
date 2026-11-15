@@ -10,10 +10,12 @@ import argparse
 import hashlib
 import json
 import lzma
+import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 
 SOURCE_URL = "https://mtgjson.com/api/v5/AtomicCards.json.xz"
 PROFILE = "atomic-b1"
@@ -73,13 +75,36 @@ def download(folder):
     folder.mkdir(parents=True, exist_ok=True)
     archive = folder / "AtomicCards.json.xz"
     sha = folder / "AtomicCards.json.xz.sha256"
-    for url, destination in ((SOURCE_URL, archive), (SOURCE_URL + ".sha256", sha)):
-        if destination.exists():
+    for destination in (archive, sha):
+        if destination.exists() or destination.is_symlink():
             raise FileExistsError("Refusing to overwrite existing source: " + str(destination))
-        subprocess.run(["curl", "--fail", "--location", "--silent", "--show-error",
-                        "--retry", "3", "--connect-timeout", "30", "--max-time", "360",
-                        "--output", str(destination), url], check=True)
-    digest = check_source(archive, sha)
+    if shutil.which("curl") is None:
+        raise FileNotFoundError("AtomicCards download requires the curl executable")
+    with tempfile.TemporaryDirectory(prefix=".atomic-download-", dir=folder) as temporary:
+        staged_archive = Path(temporary) / archive.name
+        staged_sha = Path(temporary) / sha.name
+        for url, destination in ((SOURCE_URL, staged_archive), (SOURCE_URL + ".sha256", staged_sha)):
+            subprocess.run(["curl", "--fail", "--location", "--silent", "--show-error",
+                            "--retry", "3", "--connect-timeout", "30", "--max-time", "360",
+                            "--proto", "=https", "--proto-redir", "=https", "--max-redirs", "5",
+                            "--output", str(destination), url], check=True)
+        digest = check_source(staged_archive, staged_sha)
+        publications = ((staged_sha, sha), (staged_archive, archive))
+        try:
+            # Each hard link is atomic and refuses existing names. The archive
+            # appears last; there is no atomic two-file filesystem transaction.
+            for source, destination in publications:
+                os.link(source, destination)
+        except BaseException:
+            for source, destination in reversed(publications):
+                try:
+                    # Compare entries without following a foreign replacement
+                    # symlink; a signal may arrive just after link creation.
+                    if os.path.samestat(source.lstat(), destination.lstat()):
+                        destination.unlink()
+                except FileNotFoundError:
+                    pass
+            raise
     print(json.dumps({"source_url": SOURCE_URL, "archive_sha256": digest,
                       "archive_size_bytes": archive.stat().st_size, "status": "PASS"}))
 
