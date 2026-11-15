@@ -64,18 +64,35 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('retention-days: 14', self.workflow)
 
     def test_readme_truthfully_describes_published_release_and_attribution(self):
-        self.assertIn('Tuesday at 07:00', self.readme)
-        self.assertIn('Europe/Brussels', self.readme)
-        self.assertIn('PUBLICATION_ENABLED', self.readme)
-        self.assertIn('## Source and attribution', self.readme)
-        self.assertIn('https://mtgjson.com/license/', self.readme)
-        self.assertIn('src="https://mtgjson.com/images/assets/logo-mtgjson.svg"', self.readme)
-        self.assertIn('alt="MTGJSON logo"', self.readme)
-        self.assertIn('not affiliated with or endorsed by MTGJSON', self.readme)
-        self.assertIn('The [first public Release]', self.readme)
-        self.assertIn('every scheduled run', self.readme)
-        self.assertIn('all ten assets are present', self.readme)
-        self.assertIn('Settings → Pages', self.readme)
+        """The landing page stays concise; operational guarantees live in linked guides."""
+        readme = self.readme
+        development = (ROOT / 'docs/DEVELOPMENT.md').read_text(encoding='utf-8')
+        usage = (ROOT / 'docs/USAGE.md').read_text(encoding='utf-8')
+        notices = (ROOT / 'THIRD_PARTY_NOTICES.md').read_text(encoding='utf-8')
+        json_audit = (ROOT / 'docs/JSON_DIRECT_SOURCE_PREVIEW.md').read_text(encoding='utf-8')
+
+        self.assertLessEqual(len(readme.split()), 800, 'README should be a short entrypoint')
+        self.assertLessEqual(len(readme.splitlines()), 100)
+        for link in ('docs/USAGE.md', 'docs/DEVELOPMENT.md',
+                     'docs/PROFILE_2_3_DATA_INVENTORY.md', 'THIRD_PARTY_NOTICES.md'):
+            self.assertIn(link, readme)
+        for family in ('AllPrintings SQLite', 'AllPrintings JSON', 'AtomicCards JSON'):
+            self.assertIn(family, readme)
+        self.assertIn('https://github.com/Dreadpool-87/MTGJSON-slim/releases', readme)
+        self.assertIn('Tuesday **07:00 Europe/Brussels**', development)
+        self.assertIn('Settings → Pages', development)
+        for flag in ('PUBLICATION_ENABLED', 'JSON_PUBLICATION_ENABLED',
+                     'ATOMIC_PUBLICATION_ENABLED'):
+            self.assertIn(flag, development)
+        self.assertIn('10 assets', development)
+        self.assertIn('every', development.lower())
+        self.assertIn('SHA-256', usage)
+        self.assertIn('https://mtgjson.com/license/', notices)
+        self.assertIn('not affiliated with MTGJSON', readme)
+        self.assertIn('src="https://mtgjson.com/images/assets/logo-mtgjson.svg"', readme)
+        self.assertIn('alt="MTGJSON logo"', readme)
+        self.assertIn('Current status: published', json_audit)
+        self.assertNotIn('Status: separate preview only.', json_audit)
 
 
 if __name__ == '__main__':
