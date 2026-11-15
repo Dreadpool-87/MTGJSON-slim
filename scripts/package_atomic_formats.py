@@ -7,13 +7,13 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import tempfile
 import zipfile
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import atomic_slim
+from scripts import zstd_support
 
 
 def stream_digest(stream):
@@ -29,11 +29,7 @@ def audit_archive(path, base, raw_sha, kind):
     if sidecar.read_text(encoding="ascii") != f"{checksum}  {path.name}\n":
         raise ValueError("Invalid atomic archive checksum sidecar")
     if kind == "zstd":
-        with subprocess.Popen(["zstd", "-d", "-q", "-c", str(path)],
-                              stdout=subprocess.PIPE) as proc:
-            digest = stream_digest(proc.stdout)
-            if proc.wait():
-                raise ValueError("Zstd extraction returned nonzero")
+        digest = zstd_support.decompressed_sha256(path)
     else:
         with zipfile.ZipFile(path) as z:
             if z.namelist() != [base.name]:
@@ -53,8 +49,8 @@ def package(folder):
     raw_sha = manifest["output"]["json"]["sha256"]
     paths = {kind: folder / (base.name + suffix)
              for kind, suffix in (("zstd", ".zst"), ("zip", ".zip"))}
-    if not shutil.which("zstd"):
-        raise RuntimeError("The zstd CLI is required for Atomic publication")
+    if not zstd_support.available():
+        raise RuntimeError("Python native Zstandard support or the system zstd CLI is required")
     for path in paths.values():
         if path.exists() or (path.parent / (path.name + ".sha256")).exists():
             raise FileExistsError("Refusing to overwrite existing Atomic archive")
@@ -63,7 +59,7 @@ def package(folder):
         for kind, path in paths.items():
             out = stage / path.name
             if kind == "zstd":
-                subprocess.run(["zstd", "-9", "-T1", "-q", "-o", str(out), str(base)], check=True)
+                zstd_support.compress_file(base, out)
             else:
                 with zipfile.ZipFile(out, "w", allowZip64=True) as z:
                     member = zipfile.ZipInfo(base.name, (1980, 1, 1, 0, 0, 0))

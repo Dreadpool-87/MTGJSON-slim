@@ -21,7 +21,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - name: Install JSON parser in isolated test job
         run: python -m pip install -r requirements-json.txt
       - name: Run cross-format unit tests and ensure mismatch fails closed

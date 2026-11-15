@@ -12,6 +12,7 @@ on:
       - 'contracts/main-profile-2.3.json'
       - 'scripts/release_plan.py'
       - 'scripts/package_extra_formats.py'
+      - 'scripts/zstd_support.py'
       - 'scripts/run_regression_tests.py'
       - 'requirements-json.txt'
   # Full rebuild every Tuesday at 07:00 Europe/Brussels, including DST.
@@ -31,11 +32,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - name: Install full regression dependencies (converter remains stdlib-only)
         run: |
           python -m pip install -r requirements-json.txt
-          if ! command -v zstd >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y zstd; fi
       - run: python scripts/run_regression_tests.py
 
   real-data:
@@ -52,7 +54,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - name: Download official SQLite archive every week
         run: |
           python slim.py download --directory downloads --report evidence/download.json
@@ -148,7 +152,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
+      - name: Verify native Python Zstandard support
+        run: python -c "from compression import zstd; print(zstd.zstd_version)"
       - uses: actions/download-artifact@v4
         with:
           name: verified-release-candidate
@@ -169,9 +175,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! command -v zstd >/dev/null 2>&1; then
-            sudo apt-get update -qq && sudo apt-get install -y zstd
-          fi
           python scripts/package_extra_formats.py --package candidate --report extra-formats-verification.json
       - name: Upload draft first, verify assets and publish last
         shell: bash

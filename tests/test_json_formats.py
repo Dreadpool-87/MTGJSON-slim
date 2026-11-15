@@ -8,9 +8,16 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
+
+try:
+    from compression import zstd as native_zstd
+except ImportError:
+    native_zstd = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import package_json_formats
+from scripts import zstd_support
 
 
 def digest(path):
@@ -41,7 +48,7 @@ class JsonFormatTests(unittest.TestCase):
             "format": "AllPrintings-slim.json", "verified": True, "output": entries
         }))
 
-    @unittest.skipUnless(shutil.which("zstd"), "zstd CLI is required")
+    @unittest.skipUnless(zstd_support.available(), 'Zstandard backend is not available')
     def test_archive_generation_roundtrip_and_sidecars(self):
         data = package_json_formats.prepare(self.root)
         self.assertEqual(set(data), {"zip", "zstd"})
@@ -60,6 +67,18 @@ class JsonFormatTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "differs from manifest"):
             package_json_formats.verify_base(self.root)
         self.assertFalse((self.root / (self.filename + ".zip")).exists())
+
+    def test_native_python_packaging_does_not_require_the_cli(self):
+        with patch('shutil.which', return_value=None), patch('subprocess.run', side_effect=AssertionError('CLI invoked')):
+            if native_zstd is None:
+                with self.assertRaises(RuntimeError):
+                    package_json_formats.prepare(self.root)
+            else:
+                try:
+                    result = package_json_formats.prepare(self.root)
+                except RuntimeError as exc:
+                    self.fail('Native Python should not require the CLI: ' + str(exc))
+                self.assertEqual(result['zstd']['unpacked_sha256'], digest(self.path))
 
     def test_wrong_xz_content_is_not_trusted(self):
         xz = self.root / (self.filename + ".xz")

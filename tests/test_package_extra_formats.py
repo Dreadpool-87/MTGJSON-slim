@@ -7,9 +7,16 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
+
+try:
+    from compression import zstd as native_zstd
+except ImportError:
+    native_zstd = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import package_extra_formats
+from scripts import zstd_support
 
 
 class ExtraFormatsTests(unittest.TestCase):
@@ -28,7 +35,7 @@ class ExtraFormatsTests(unittest.TestCase):
             'sha256': self.digest}}}))
         (self.folder / (self.name + '.sha256')).write_text(f'{self.digest}  {self.name}\n')
 
-    @unittest.skipUnless(shutil.which('zstd'), 'zstd CLI is not installed')
+    @unittest.skipUnless(zstd_support.available(), 'Zstandard backend is not available')
     def test_roundtrip_and_checksums(self):
         items = package_extra_formats.prepare(self.folder)
         self.assertEqual(set(items), {'zstd', 'zip'})
@@ -47,6 +54,18 @@ class ExtraFormatsTests(unittest.TestCase):
         self.db.write_bytes(self.db.read_bytes() + b'corruption')
         with self.assertRaisesRegex(ValueError, 'differs from manifest'):
             package_extra_formats.prepare(self.folder)
+
+    def test_native_python_packaging_does_not_require_the_cli(self):
+        with patch('shutil.which', return_value=None), patch('subprocess.run', side_effect=AssertionError('CLI invoked')):
+            if native_zstd is None:
+                with self.assertRaises(RuntimeError):
+                    package_extra_formats.prepare(self.folder)
+            else:
+                try:
+                    result = package_extra_formats.prepare(self.folder)
+                except RuntimeError as exc:
+                    self.fail('Native Python should not require the CLI: ' + str(exc))
+                self.assertEqual(result['zstd']['unpacked_sha256'], self.digest)
 
     def test_wrong_checksum_sidecar_is_rejected(self):
         (self.folder / (self.name + '.sha256')).write_text('invalid\n')

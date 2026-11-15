@@ -13,6 +13,12 @@ import atomic_slim
 from scripts import audit_atomic_source as independent
 from scripts import atomic_release_plan as planning
 from scripts import package_atomic_formats as packaging
+from scripts import zstd_support
+
+try:
+    from compression import zstd as native_zstd
+except ImportError:
+    native_zstd = None
 
 ROOT = Path(__file__).resolve().parents[1]
 HAS_IJSON = importlib.util.find_spec('ijson') is not None
@@ -249,7 +255,7 @@ class AtomicSlimTests(unittest.TestCase):
         self.assertIn("name: verified-atomic-release-candidate", workflow)
         self.assertIn("output-atomic/*.json.sha256", workflow)
 
-    @unittest.skipUnless(shutil.which("zstd"), "zstd CLI not available")
+    @unittest.skipUnless(zstd_support.available(), 'Zstandard backend is not available')
     @unittest.skipUnless(HAS_IJSON, 'optional ijson; installed and mandatory in Atomic workflow')
     def test_zip_zstd_roundtrips(self):
         self.prepare()
@@ -262,6 +268,25 @@ class AtomicSlimTests(unittest.TestCase):
             formats = packaging.package(self.output)
             self.assertEqual(set(formats), {"zip", "zstd"})
             self.assertEqual(formats["zip"]["unpacked_sha256"], m["output"]["json"]["sha256"])
+
+    @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
+    def test_native_python_packaging_does_not_require_the_cli(self):
+        self.prepare()
+        with patch.object(atomic_slim, 'CONTRACT', self.contract_file):
+            atomic_slim.build(self.archive, self.sidecar, self.output)
+            m = json.loads((self.output / atomic_slim.MANIFEST).read_text())
+            independent.audit(self.archive, self.sidecar, self.output / m['output']['json']['name'],
+                              self.output, self.root / 'audit.json', mark_verified=True)
+            with patch('shutil.which', return_value=None), patch('subprocess.run', side_effect=AssertionError('CLI invoked')):
+                if native_zstd is None:
+                    with self.assertRaises(RuntimeError):
+                        packaging.package(self.output)
+                else:
+                    try:
+                        result = packaging.package(self.output)
+                    except RuntimeError as exc:
+                        self.fail('Native Python should not require the CLI: ' + str(exc))
+                    self.assertEqual(result['zstd']['unpacked_sha256'], m['output']['json']['sha256'])
 
 
 if __name__ == "__main__":
