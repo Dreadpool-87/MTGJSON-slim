@@ -23,6 +23,29 @@ CORE_TOKEN = {"uuid", "name", "number", "setCode", "identifiers"}
 MAX_DETAIL = 20
 
 
+def audit_root(path, compressed):
+    """Independently reject unknown, repeated or malformed top-level JSON keys."""
+    opener = lzma.open if compressed else open
+    seen = set()
+    pending = None
+    with opener(path, "rb") as stream:
+        events = iter(ijson.parse(stream, use_float=True))
+        if next(events, None) != ("", "start_map", None):
+            raise ValueError("Audit JSON root must be an object")
+        for prefix, event, value in events:
+            if prefix == "" and event == "map_key":
+                if value in seen or value not in {"meta", "data"}:
+                    raise ValueError("Unknown or duplicate audit JSON root field: " + value)
+                seen.add(value)
+                pending = value
+            elif pending is not None and prefix == pending:
+                if event != "start_map":
+                    raise ValueError("Audit JSON root meta/data must be objects")
+                pending = None
+    if seen != {"meta", "data"}:
+        raise ValueError("Audit JSON root must contain exactly meta and data")
+
+
 def items_json_xz(archive):
     with lzma.open(archive, "rb") as stream:
         yield from ijson.kvitems(stream, "data", use_float=True)
@@ -34,6 +57,8 @@ def items_json(path):
 
 
 def audit(archive, slim_json, report):
+    audit_root(archive, compressed=True)
+    audit_root(slim_json, compressed=False)
     found = {kind: Counter() for kind in APPROVED_REMOVALS}
     retained = {kind: Counter() for kind in APPROVED_REMOVALS}
     removed = {kind: Counter() for kind in APPROVED_REMOVALS}
