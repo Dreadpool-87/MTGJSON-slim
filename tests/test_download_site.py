@@ -65,6 +65,10 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn('contracts/atomic-b1.json', self.html)
         self.assertIn('At build time', self.html)
 
+    def test_allprintings_uncompressed_label_is_not_duplicated(self):
+        self.assertIn('JSON · Uncompressed', self.html)
+        self.assertNotIn('JSON JSON · Uncompressed', self.html)
+
     def test_four_clear_database_choices(self):
         self.assertEqual(set(self.parser.format_values), {'sqlite', 'xz', 'zst', 'zip'})
         self.assertEqual(len(self.parser.format_values), 4)

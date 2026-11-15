@@ -120,6 +120,34 @@ class JsonPipelineTests(unittest.TestCase):
         self.source.write_bytes(lzma.compress(payload))
         self.sidecar.write_text(hashlib.sha256(self.source.read_bytes()).hexdigest() + "\n")
 
+    def test_reject_unknown_duplicate_missing_or_nonobject_root(self):
+        valid = sample_source()
+        text = json.dumps(valid)
+        cases = {
+            "unknown": text[:-1] + ',"metadataExtra":{"new":true}}',
+            "duplicate meta": text[:-1] + ',"meta":{}}',
+            "duplicate data": text[:-1] + ',"data":{}}',
+            "missing meta": json.dumps({"data": valid["data"]}),
+            "missing data": json.dumps({"meta": valid["meta"]}),
+            "nonobject meta": json.dumps({"meta": [], "data": valid["data"]}),
+            "nonobject data": json.dumps({"meta": valid["meta"], "data": []}),
+            "nonobject root": "[]",
+        }
+        for label, payload in cases.items():
+            with self.subTest(label=label):
+                self.source.write_bytes(lzma.compress(payload.encode("utf-8")))
+                self.sidecar.write_text(hashlib.sha256(self.source.read_bytes()).hexdigest() + "\n")
+                with self.assertRaisesRegex(ValueError, "root"):
+                    slim_json.build(self.source, self.sidecar, self.folder / "output")
+                self.assertFalse((self.folder / "output").exists())
+
+    def test_root_key_order_is_not_significant(self):
+        valid = sample_source()
+        swapped = {"data": valid["data"], "meta": valid["meta"]}
+        self.source.write_bytes(lzma.compress(json.dumps(swapped).encode("utf-8")))
+        self.sidecar.write_text(hashlib.sha256(self.source.read_bytes()).hexdigest() + "\n")
+        slim_json.check_root(self.source)
+
     def test_verified_independent_build_and_identical_xz(self):
         dest = self.folder / "output"
         manifest = slim_json.build(self.source, self.sidecar, dest)
