@@ -1,9 +1,10 @@
-# Direct AllPrintings JSON slim — experimental preview
+# AllPrintings JSON — source policy and acceptance evidence
 
-**Status: separate preview only.** This branch adds an independent importer of official MTGJSON
-[AllPrintings.json.xz](https://mtgjson.com/api/v5/AllPrintings.json.xz). It deliberately does
-**not** alter the existing SQLite converter, profile 2.3, weekly publishing workflow, live site,
-or public Releases. Two full official-source JSON builds in one GitHub Actions run produced byte-identical output. Cross-format checks and public-release integration remain separate acceptance gates.
+**Current status: published and independently source-verified.** [Download AllPrintings JSON](https://dreadpool-87.github.io/MTGJSON-slim/) · [14 November 2026 JSON Release](https://github.com/Dreadpool-87/MTGJSON-slim/releases/tag/json-slim-2026-11-14-f0248315f9343a2f) · [Production publishing run](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43619556887).
+
+This page documents the **actual field selection and historical acceptance evidence** for the independent AllPrintings JSON pipeline. Its filename is kept for existing links from the original preview stage; the dataset is **no longer a preview**. Earlier run results below are explicitly historical, not statements about current publication status.
+
+For current download, build, audit and packaging commands, see [Usage](USAGE.md). For weekly jobs, releases and the Python 3.14 native Zstandard migration, see [Development](DEVELOPMENT.md). Current workflow jobs use Python 3.14's `compression.zstd`; older local Python may use the legacy `zstd` CLI. Historical Zstandard hashes below were produced by the earlier toolchain and are not promised to match newer compressor runtimes.
 
 ## Why independently source JSON?
 
@@ -12,7 +13,7 @@ set with `cards` and `tokens`. It includes embedded `identifiers`, `legalities`,
 `rulings`. This differs from the separate tables and naming in official SQLite. A JSON
 export of the slim SQLite cannot preserve the official JSON shape and type semantics directly.
 
-The preview downloads **official JSON XZ and its official checksum**, verifies the source bytes
+The converter downloads **official JSON XZ and its official checksum**, verifies the source bytes
 and projects each set using a streaming parser. It does **not** create JSON from SQLite.
 
 ## Removal policy
@@ -39,57 +40,15 @@ input formats with different shapes and sometimes different source fields. They 
 for overlapping identities/data once a real pinned-source build is run, but must not be
 declared field-identical by default.
 
-## Usage
+## Current usage and publication
 
-Python 3.11+, with one JSON-specific streaming dependency. The existing SQLite converter
-continues to use only the Python standard library.
+The official `AllPrintings.json.xz` is verified using its official SHA-256 sidecar before streaming into set-grouped slim JSON. The builder and independent auditor preserve reviewed values and produce raw JSON and XZ with checksums. A separate verified step creates ZIP and Zstandard, checking lossless reconstruction. A changed dataset is published as a separate `json-slim-...` GitHub Release with ten assets; unchanged content is not republished.
 
-```bash
-python -m pip install -r requirements-json.txt
-python slim_json.py download --directory downloads-json
-python slim_json.py build \
-  --archive downloads-json/AllPrintings.json.xz \
-  --checksum-path downloads-json/AllPrintings.json.xz.sha256 \
-  --output-dir output-json
-python -m unittest discover -s tests -p 'test_json_slim.py' -v
-```
+The public [download page](https://dreadpool-87.github.io/MTGJSON-slim/) enables each available format only when its matching checksum sidecar exists. The weekly job is scheduled for Tuesdays at **07:20 Europe/Brussels**, subject to possible GitHub delays. This JSON family does not replace GitHub's latest SQLite release.
 
-The build writes an uncompressed `.json`, lossless `.json.xz`, SHA-256 sidecars and
-`json-manifest.json`. Source and output are read back and compared **set-by-set** against
-the independently filtered source, and both the source SHA and compression roundtrip are checked.
-Nothing is published automatically. The builder refuses to overwrite an existing output folder.
+For the exact commands, use [Usage](USAGE.md). Do not treat a successfully completed *historical pre-publication* test as evidence that a Release was live at that time.
 
-### Additional download packages (after validating the raw JSON)
-
-The official source may be downloaded as `AllPrintings.json.xz` to save bandwidth. It is
-stream-decompressed during projection into `AllPrintings-slim.json`. The verified JSON
-is then independently packaged in XZ, ZIP and Zstandard formats, just as SQLite is
-available in multiple lossless packages. JSON is **never** reconstructed from SQLite.
-
-```bash
-# After the JSON build, with the system zstd executable installed:
-python scripts/package_json_formats.py --package output-json --report json-packaging-proof.json
-```
-
-This creates `.json.zst` (single-thread Zstandard level 9) and `.json.zip`
-(Deflate level 6, exactly one JSON entry), each with its own `.sha256`. The
-script re-verifies the original JSON and XZ against `json-manifest.json`, then
-decompresses both new archives and checks byte-identical JSON SHA-256 hashes.
-It refuses to overwrite existing archives. The original JSON and JSON manifest
-are unchanged; the report records the two additional archive hashes.
-
-A preview of the planned additional download choices is in `docs/index.html`
-on this branch. The live GitHub Pages website remains unchanged until a reviewed
-merge. The JSON links are deliberately **disabled** if no actual verified JSON
-assets appear in the latest public GitHub Release. No release publishing is
-enabled by this draft PR.
-
-**Still required before publication:** a same-source-date JSON/SQLite identity
-audit, an independent review of the retained/omitted deckbuilding fields, and
-a release integration plan that retains source provenance, validates all assets
-before making a Release public, and avoids excessive temporary Actions storage.
-
-## First full official-source acceptance (14 November 2026)
+## Historical evidence: first full official-source acceptance (14 November 2026)
 
 [GitHub Actions full-source acceptance run #43609135984](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43609135984) completed successfully from the verified upstream archive for MTGJSON `5.3.0+20261114`.
 
@@ -102,9 +61,9 @@ before making a Release public, and avoids excessive temporary Actions storage.
 
 **Independent reproducibility check:** [GitHub Actions run #43609523767](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43609523767) downloaded and verified official `AllPrintings.json.xz` once, then performed **two full direct-source builds**. Both sets of raw JSON and XZ hashes and the complete manifests were identical (`SECOND_BUILD_BYTE_IDENTICAL_PASS`). Each build independently validated all retained values against the source and the XZ roundtrip. The full run succeeded.
 
-This verifies deterministic same-runtime outputs for the pinned official source. A JSON-versus-SQLite cross-format identity audit and safe publishing integration are still outstanding; no public JSON files are released.
+This verified deterministic same-runtime outputs for the pinned official source **at that stage**. The later cross-format comparison, publishing integration and public Release are documented below.
 
-## Verified full-data packaging — 14 November 2026
+## Historical evidence: verified full-data packaging — 14 November 2026
 
 [GitHub Actions #43616001606](https://github.com/Dreadpool-87/MTGJSON-slim/actions/runs/43616001606) built both independent source-derived JSON outputs from official MTGJSON `5.3.0+20261114`, confirmed byte-identical JSON/XZ and matching manifests, then produced ZIP and Zstandard from the verified first JSON.
 
@@ -117,9 +76,9 @@ This verifies deterministic same-runtime outputs for the pinned official source.
 
 The ZIP contains exactly one JSON file; ZIP and Zstandard both unpacked to raw JSON SHA-256 `eaa382d2f30511a64291848d75880c58b0b3979f757cf5e6881ee3198b04cf8e`. The full packaging step returned `FULL_JSON_ZIP_ZSTD_ROUNDTRIP_PASS`; it ran in 11.42 seconds on the GitHub runner. These are pinned-source measurements and not promises for future data.
 
-**No public JSON Release was created.** Cross-format semantic acceptance and approval of the public publishing integration are still pending.
+**No public JSON Release was created by this historical packaging test.** The remaining acceptance and publishing steps were completed afterward; see the current status at the top of this document.
 
-## Same-date JSON / SQLite acceptance and field policy (14 November 2026)
+## Historical evidence: same-date JSON / SQLite acceptance and field policy (14 November 2026)
 
 The first comparison was correctly blocked when the existing SQLite Release was dated
 13 November and the JSON source was dated 14 November. The subsequent
@@ -139,7 +98,7 @@ slim outputs from MTGJSON `5.3.0+20261114`.
   reported zero mismatches.
 - **SQLite source schema drift:** the 14 November official SQLite reordered
   existing `sets` columns without adding/removing/changing their names or types.
-  The code on this branch allows **only** that proven `sets`-column permutation;
+  The subsequently merged code allows **only** that proven `sets`-column permutation;
   unknown field/type/index changes still fail closed. The full validated SQLite
   build succeeded using this compatibility rule; locked selected profile 2.3
   fields and output schema remained unchanged.
@@ -158,7 +117,7 @@ This comparison checks the documented intersecting fields, not strict equality
 of the two format-specific schemas, and cannot substitute for a complete
 Magic: The Gathering rules engine.
 
-## Release and site architecture
+## Release and site architecture (design accepted and deployed)
 
 JSON uses **separate versioned Releases** named `json-slim-<date>-<data-fingerprint>`
 rather than modifying existing, immutable SQLite releases. This allows JSON-only
@@ -182,10 +141,9 @@ passed both full source-backed builders, independent JSON-field and SQLite
 identity checks, validation of the JSON-only data fingerprint, and a guarded
 release plan (blocked intentionally during the dry-run). The workflow now has
 `JSON_PUBLICATION_ENABLED: 'true'`, but **only main** is allowed to publish.
-The new Releases and live website remain unchanged until the PR is merged and
-the first main-branch publishing job actually succeeds.
+That gate was later satisfied by the public, verified JSON Release linked above.
 
-## Acceptance gates before merging or publishing
+## Historical acceptance gates (completed)
 
 1. **PASS** — Official full `AllPrintings.json.xz` download and checksum verification.
 2. **PASS** — Full builder, independent source/output per-set comparison, counts, hashes, sizes, and memory/time measurements.
@@ -193,7 +151,7 @@ the first main-branch publishing job actually succeeds.
 4. **PASS** — Full-data Zstandard/ZIP packaging, exact roundtrip hashes and per-file checksums.
 5. **PASS** — Same-date printing UUIDs, source-backed token-set relationships, Oracle IDs, rules, rulings and legalities compared against validated SQLite: 0 unexplained differences.
 6. **PASS WITH LIMITATIONS** — Source-vs-output field-loss audit and explicit deckbuilding omission policy; alternate-language search and draft/stock-deck analysis are deliberately out of scope.
-7. **PASS FOR INTEGRATION** — The separate JSON Release pipeline and website code passed full read-only end-to-end testing. Actual first public Release, uploaded assets and live Pages deployment still require post-merge verification.
+7. **PASS FOR INTEGRATION** — The separate JSON Release pipeline and website code passed full read-only end-to-end testing. The first public Release and deployed site were verified in the subsequent 14 November 2026 production run linked above.
 
 MTGJSON remains the upstream data source. This is an independent unofficial derivative,
 not an endorsement or official MTGJSON alternative.
