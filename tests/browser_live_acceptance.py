@@ -53,7 +53,7 @@ def response_diagnostics(response) -> dict:
     if response.status != 200:
         try:
             body = response.text()[:512]
-            body = re.sub(r'(?i)Bearer\\s+[^\\s",}]+', 'Bearer [REDACTED]', body)
+            body = re.sub(r'(?i)Bearer\s+[^\s",}]+', 'Bearer [REDACTED]', body)
             body = re.sub(r'gh[pousr]_[A-Za-z0-9_]+', '[REDACTED]', body)
             record['body_excerpt'] = body
         except Exception as exc:
