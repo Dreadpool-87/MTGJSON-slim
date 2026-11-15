@@ -81,6 +81,7 @@
     <span class="eyebrow">Verified MTG deckbuilding data</span>
     <h1>Deckbuilding data.<br><em>Your format.</em></h1>
     <p class="lead">Choose SQLite for indexed searches, AllPrintings JSON for full card printings, or AtomicCards JSON for card-name and rules lookups. Each is independently built from verified official MTGJSON data. No GitHub account is needed.</p>
+    <noscript><p class="footnote">JavaScript is disabled; availability has not been checked. Browse the <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=slim-">SQLite</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=json-slim-">AllPrintings JSON</a> or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=atomic-slim-">AtomicCards</a> release series, or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">all Releases</a>, for files and manifests.</p></noscript>
     <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Checking SQLite release availability…</span></div>
     <section class="panel" aria-labelledby="download-title">
       <h2 id="download-title">SQLite downloads</h2>
@@ -123,7 +124,6 @@
       <p class="footnote"><a id="atomic-release" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">Browse Releases</a> · <a id="atomic-manifest" hidden>Selected Release manifest</a></p>
       <p class="footnote">These files have an independent <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">AtomicCards Release series</a>. Every format requires its own SHA-256 sidecar.</p>
     </section>
-    <noscript><p class="footnote">JavaScript is disabled; availability has not been checked. Browse the <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=slim-">SQLite</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=json-slim-">AllPrintings JSON</a> or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=atomic-slim-">AtomicCards</a> release series, or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">all Releases</a>, for files and manifests.</p></noscript>
     <section class="about" aria-labelledby="why-slim">
       <h2 id="why-slim">Why MTGJSON-slim?</h2>
       <p>The official <a href="https://mtgjson.com/">MTGJSON</a> datasets are comprehensive. SQLite and AllPrintings-slim preserve verified card and token printings and gameplay data, while omitting reviewed nonessential data. AtomicCards-slim independently preserves card-name groups, translated names, nested relationships, rulings and legalities; only vendor links and two fully equivalent deprecated mana aliases are removed.</p>
