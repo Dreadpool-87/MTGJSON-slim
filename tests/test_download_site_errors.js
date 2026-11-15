@@ -7,7 +7,7 @@ const html = fs.readFileSync(require('node:path').join(__dirname, '../docs/index
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
 async function status(family, response) {
   const target = {textContent: ''};
-  const document = {getElementById: () => target, querySelectorAll: () => []};
+  const document = {getElementById: () => target, querySelectorAll: selector => selector.includes('extension') ? [{dataset: {jsonExtension: '.json', atomicExtension: '.json'}}] : []};
   vm.runInNewContext(scripts[family === 'json' ? 1 : 2], {document, fetch: async () => response});
   await new Promise(setImmediate);
   return target.textContent;
@@ -20,6 +20,9 @@ for (const family of ['json', 'atomic']) {
   });
   test(`${family}: successful empty listing is distinct from request failure`, async () => {
     assert.match(await status(family, {ok: true, json: async () => []}), /no published/i);
+  });
+  for (const payload of [[null], [{}], [{tag_name: family === 'json' ? 'json-slim-test' : 'atomic-slim-test', draft: false, prerelease: false}], [{tag_name: family === 'json' ? 'json-slim-test' : 'atomic-slim-test', draft: false, prerelease: false, assets: [null]}]]) test(`${family}: damaged array items are unavailable`, async () => {
+    assert.match(await status(family, {ok: true, json: async () => payload}), /unavailable/i);
   });
   test(`${family}: malformed payload is unavailable`, async () => {
     assert.match(await status(family, {ok: true, json: async () => ({message: 'broken'})}), /unavailable/i);

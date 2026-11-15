@@ -232,7 +232,11 @@
         if (!response.ok) throw new Error('GitHub API unavailable');
         return response.json();
       }).then(releases => {
-        if (!Array.isArray(releases)) throw new Error('No Releases');
+        if (!Array.isArray(releases) || releases.some(item => !item ||
+          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
+          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
+          throw new Error('Invalid GitHub release metadata');
+        }
         // JSON uses an independent release series; do not displace the SQLite "latest".
         const release = releases
           .filter(item => item && !item.draft && !item.prerelease &&
@@ -279,7 +283,11 @@
         if (!response.ok) throw new Error('GitHub API returned ' + response.status);
         return response.json();
       }).then(releases => {
-        if (!Array.isArray(releases)) throw new Error('Invalid GitHub response');
+        if (!Array.isArray(releases) || releases.some(item => !item ||
+          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
+          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
+          throw new Error('Invalid GitHub release metadata');
+        }
         const release = releases.filter(item => item && !item.draft && !item.prerelease &&
           typeof item.tag_name === 'string' && item.tag_name.startsWith('atomic-slim-'))
           .sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''))[0];
