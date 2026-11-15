@@ -98,7 +98,7 @@ Every published Release is separate per family and carries **10 assets**: four d
 
 The SQLite content fingerprint includes retained data, SQL schema and indexes, but excludes incidental source `meta` rows. Metadata-only changes therefore do **not** trigger a new SQLite Release. AllPrintings JSON similarly uses a data-only fingerprint; AtomicCards compares both data and its profile-contract fingerprint. A contract-only Atomic change must have a distinct tag. Rebuilding an unchanged dataset is still useful for validating against a new official daily source snapshot.
 
-A failed draft may require explicit maintenance, not bypassing validation. A publish job with write permissions is separate from read-only build/test jobs. The expected change gate (and publication disabled/enabled flag) is defined in the workflow files; never force an overwrite of prior Releases.
+A failed draft may require explicit maintenance, not bypassing validation. A publish job with write permissions is separate from read-only build/test jobs. Publication is explicitly controlled by per-family workflow flags: `PUBLICATION_ENABLED` (SQLite), `JSON_PUBLICATION_ENABLED` (AllPrintings JSON) and `ATOMIC_PUBLICATION_ENABLED` (AtomicCards). These are `true` in the current workflows; a maintainer can disable publication for a family without weakening its validation. Never force an overwrite of a prior Release.
 
 ## Reproducibility and runtime differences
 
@@ -121,7 +121,7 @@ Historical acceptance evidence is deliberately maintained outside the README:
 - **Existing output directory or file:** use a new versioned destination. Only identical verified inputs may be reused when supported.
 - **Missing space, timeout or dependency:** provide sufficient temporary disk/runtime time; ensure `ijson`, Node.js and the supported Zstandard backend are available as needed. Do not publish a partial candidate.
 - **Failed or incomplete draft Release:** inspect Action evidence and individual assets, repair the cause, and explicitly clean up a failed draft if necessary.
-- **Missing website download or checksum:** check the actual published Release's asset names and `.sha256` pairs, GitHub API availability and the Pages deployment.
+- **Missing website download or checksum:** check the actual published Release's asset names and `.sha256` pairs, GitHub API availability and the Pages deployment. Review **Settings → Pages** for the existing `main` / `/docs` site configuration.
 
 The project intentionally does **not** generate `.sql` or `.psql` exports: neither provides a stronger directly queryable local database than the shipped SQLite format, and both would increase maintenance and validation complexity.
 
