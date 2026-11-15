@@ -39,7 +39,6 @@ class FieldSelectionTests(unittest.TestCase):
         self.dst.write_text(json.dumps(self.output), encoding="utf-8")
 
     def test_independent_audit_rejects_invalid_input_and_output_root(self):
-        valid = self.source
         for target in ("source", "output"):
             for kind in ("unknown", "duplicate", "missing", "wrong type"):
                 with self.subTest(target=target, kind=kind):
