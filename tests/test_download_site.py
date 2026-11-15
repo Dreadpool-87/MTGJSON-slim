@@ -12,14 +12,22 @@ class Inputs(HTMLParser):
     def __init__(self):
         super().__init__()
         self.format_values = []
+        self.json_values = []
+        self.atomic_values = []
         self.ids = set()
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if 'id' in attrs:
             self.ids.add(attrs['id'])
-        if tag == 'input' and attrs.get('name') == 'format':
-            self.format_values.append(attrs.get('value'))
+        if tag == 'input':
+            name = attrs.get('name')
+            if name == 'format':
+                self.format_values.append(attrs.get('value'))
+            if name == 'json-format':
+                self.json_values.append(attrs.get('value'))
+            if name == 'atomic-format':
+                self.atomic_values.append(attrs.get('value'))
 
 
 class DownloadSiteTests(unittest.TestCase):
@@ -34,6 +42,11 @@ class DownloadSiteTests(unittest.TestCase):
         cls.script = (ROOT / 'docs/release-downloads.js').read_text(encoding='utf-8')
         cls.parser = Inputs()
         cls.parser.feed(cls.html)
+
+    def test_matching_json_atomic_selector_behaviour(self):
+        result = subprocess.run(['node', '--test', str(ROOT / 'tests/test_download_site_ui.js')],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_error_states_in_all_json_panels(self):
         result = subprocess.run(['node', '--test', str(ROOT / 'tests/test_download_site_errors.js')], capture_output=True, text=True)
@@ -55,6 +68,9 @@ class DownloadSiteTests(unittest.TestCase):
     def test_four_clear_database_choices(self):
         self.assertEqual(set(self.parser.format_values), {'sqlite', 'xz', 'zst', 'zip'})
         self.assertEqual(len(self.parser.format_values), 4)
+        for family in ('json', 'atomic'):
+            values = getattr(self.parser, family + '_values')
+            self.assertEqual(values, ['xz', 'zst', 'zip', 'raw'])
 
     def test_shared_api_and_real_download_links(self):
         self.assertIn('src="release-downloads.js" defer', self.html)
@@ -79,6 +95,10 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn('Not affiliated with or endorsed', self.html)
         self.assertIn('id="download"', self.html)
         self.assertIn('id="checksum"', self.html)
+        for family in ('json', 'atomic'):
+            for suffix in ('download', 'checksum', 'status-dot', 'file-note'):
+                self.assertIn(family + '-' + suffix, self.parser.ids)
+            self.assertIn('name="' + family + '-format"', self.html)
 
     def test_fallback_for_missing_release_or_rate_limit(self):
         self.assertIn('Availability UNKNOWN', self.script)
@@ -89,11 +109,12 @@ class DownloadSiteTests(unittest.TestCase):
     def test_json_downloads_are_optional_and_paired(self):
         self.assertIn('id="json-title"', self.html)
         for family in ('json', 'atomic'):
-            for suffix in ('.json', '.json.xz', '.json.zst', '.json.zip'):
-                self.assertIn(f'data-{family}-extension="{suffix}"', self.html)
-                self.assertIn(f'data-{family}-sha="{suffix}"', self.html)
-        self.assertIn('aria-disabled="true"', self.html)
-        self.assertIn("link.removeAttribute('aria-disabled')", self.script)
+            for option in ('xz', 'zst', 'zip', 'raw'):
+                self.assertIn(f'id="{family}-size-{option}"', self.html)
+            self.assertIn(f'id="{family}-download" class="download"', self.html)
+            self.assertIn(f'id="{family}-checksum" hidden', self.html)
+        self.assertIn("pair.sha.browser_download_url", self.script)
+        self.assertIn("input.addEventListener('change', refresh)", self.script)
         self.assertIn("'atomic-slim-'", self.script)
         self.assertIn("'json-slim-'", self.script)
         self.assertIn('AtomicCards Release series', self.html)

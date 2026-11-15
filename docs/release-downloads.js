@@ -139,43 +139,40 @@
       message += count + ' formats with matching checksum files in the checked listing.';
       if (result.partial) message += ' Further availability UNKNOWN: listing incomplete or temporarily unavailable.';
     }
-    if (family === 'sqlite') {
-      const button = document.getElementById('download');
-      const checksum = document.getElementById('checksum');
-      const note = document.getElementById('file-note');
-      const inputs = [...document.querySelectorAll('input[name="format"]')];
-      const pairFor = input => chosen && chosen.pairs[input.value === 'sqlite' ? 'raw' : input.value];
-      for (const input of inputs) {
-        const pair = pairFor(input); input.disabled = !pair;
-        document.getElementById('size-' + input.value).textContent = pair ? bytes(pair.asset.size) : 'Not available';
-      }
-      if (!inputs.some(input => input.checked && !input.disabled)) inputs.forEach(input => {input.checked = false;});
-      if (!inputs.some(input => input.checked)) {const first = inputs.find(input => !input.disabled); if (first) first.checked = true;}
-      const refresh = () => {
-        const input = inputs.find(input => input.checked && !input.disabled);
-        const pair = input && pairFor(input);
-        button.href = pair ? pair.asset.browser_download_url : releases;
-        button.textContent = pair ? 'Download ' + input.value.toUpperCase() : 'Open Releases';
-        checksum.hidden = !pair; checksum.href = pair ? pair.sha.browser_download_url : releases;
-        note.textContent = pair ? pair.asset.name + ' · ' + bytes(pair.asset.size) : 'Use GitHub Releases to inspect files and manifests.';
-      };
-      inputs.forEach(input => input.addEventListener('change',refresh)); refresh();
-      document.getElementById('status-dot').classList.add(count ? 'ready' : 'error');
-    } else {
-      const links = [...document.querySelectorAll('[data-' + family + '-extension]')];
-      const shas = [...document.querySelectorAll('[data-' + family + '-sha]')];
-      for (const link of links) {
-        const ext = link.dataset[family + 'Extension'];
-        const format = ext === '.json' ? 'raw' : ext.slice(6);
-        const pair = chosen && chosen.pairs[format];
-        const sha = shas.find(a => a.dataset[family + 'Sha'] === ext);
-        if (pair && sha) {
-          link.href = pair.asset.browser_download_url; link.removeAttribute('aria-disabled');
-          sha.href = pair.sha.browser_download_url; sha.removeAttribute('aria-disabled');
-          link.querySelector('span').textContent = bytes(pair.asset.size) + ' · Download';
-        } else link.querySelector('span').textContent = result.partial ? 'Availability unknown' : 'No matching file/checksum';
-      }
+    // Every dataset exposes the same two-step interaction: select a format, then download.
+    // Format and checksum URLs are always from the same validated release pair.
+    const button = document.getElementById(family === 'sqlite' ? 'download' : family + '-download');
+    const checksum = document.getElementById(family === 'sqlite' ? 'checksum' : family + '-checksum');
+    const note = document.getElementById(family === 'sqlite' ? 'file-note' : family + '-file-note');
+    const dot = document.getElementById(family === 'sqlite' ? 'status-dot' : family + '-status-dot');
+    const inputName = family === 'sqlite' ? 'format' : family + '-format';
+    const inputs = [...document.querySelectorAll('input[name="' + inputName + '"]')];
+    const pairFor = input => chosen && chosen.pairs[input.value === 'sqlite' ? 'raw' : input.value];
+    for (const input of inputs) {
+      const pair = pairFor(input);
+      input.disabled = !pair;
+      const sizeId = family === 'sqlite' ? 'size-' + input.value : family + '-size-' + input.value;
+      document.getElementById(sizeId).textContent = pair ? bytes(pair.asset.size) : 'Not available';
     }
+    if (!inputs.some(input => input.checked && !input.disabled)) {
+      inputs.forEach(input => { input.checked = false; });
+      const first = inputs.find(input => !input.disabled);
+      if (first) first.checked = true;
+    }
+    const refresh = () => {
+      const selected = inputs.find(input => input.checked && !input.disabled);
+      const pair = selected && pairFor(selected);
+      button.href = pair ? pair.asset.browser_download_url : releases;
+      const label = selected && (selected.value === 'raw' ? 'JSON' : selected.value.toUpperCase());
+      button.textContent = pair ? 'Download ' + label : 'Open Releases';
+      checksum.hidden = !pair;
+      checksum.href = pair ? pair.sha.browser_download_url : releases;
+      note.textContent = pair ? pair.asset.name + ' · ' + bytes(pair.asset.size) :
+        'Use GitHub Releases to inspect files and manifests.';
+    };
+    inputs.forEach(input => input.addEventListener('change', refresh));
+    refresh();
+    dot.classList.add(count ? 'ready' : 'error');
     status.textContent = message;
   }
   // One promise, one initial request, and one bounded scan shared by all panels.
