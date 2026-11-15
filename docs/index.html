@@ -81,7 +81,7 @@
     <span class="eyebrow">Verified MTG deckbuilding data</span>
     <h1>Deckbuilding data.<br><em>Your format.</em></h1>
     <p class="lead">Choose SQLite for indexed searches, AllPrintings JSON for full card printings, or AtomicCards JSON for card-name and rules lookups. Each is independently built from verified official MTGJSON data. No GitHub account is needed.</p>
-    <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Looking up the latest verified release…</span></div>
+    <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Checking SQLite release availability…</span></div>
     <section class="panel" aria-labelledby="download-title">
       <h2 id="download-title">SQLite downloads</h2>
       <p class="hint">All compressed formats unpack to the exact same SQLite database. File sizes are taken from the latest GitHub Release.</p>
@@ -93,7 +93,7 @@
           <label class="format"><input type="radio" name="format" value="sqlite" disabled><span class="format-content"><span class="format-header"><span class="format-name">SQLite · Uncompressed</span><span class="format-size" id="size-sqlite">—</span></span><span class="format-details">Ready for SQLite tools without unpacking.</span></span></label>
         </div>
       </fieldset>
-      <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
+      <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" hidden class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
       <p class="file-note" id="file-note" aria-live="polite">Release files are hosted on GitHub, not this site.</p>
     </section>
     <section class="panel json-panel" aria-labelledby="json-title">
@@ -101,33 +101,37 @@
       <p class="hint">An independently sourced, deckbuilding-focused AllPrintings-slim.json. JSON and SQLite are not byte-identical or schema-identical. JSON files are available here only after a verified public Release.</p>
       <p id="json-status" class="status" role="status" aria-live="polite">Checking JSON availability…</p>
       <div class="json-links">
-        <div class="json-choice"><a class="json-link" data-json-extension=".json.xz" aria-disabled="true"><strong>JSON XZ · Smallest</strong><span>Not yet published</span></a><a class="json-checksum" data-json-sha=".json.xz" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-json-extension=".json.zst" aria-disabled="true"><strong>JSON Zstandard · Fast</strong><span>Not yet published</span></a><a class="json-checksum" data-json-sha=".json.zst" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-json-extension=".json.zip" aria-disabled="true"><strong>JSON ZIP · Easy</strong><span>Not yet published</span></a><a class="json-checksum" data-json-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-json-extension=".json" aria-disabled="true"><strong>JSON · Uncompressed</strong><span>Not yet published</span></a><a class="json-checksum" data-json-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-json-extension=".json.xz" aria-disabled="true"><strong>JSON XZ · Smallest</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json.xz" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-json-extension=".json.zst" aria-disabled="true"><strong>JSON Zstandard · Fast</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json.zst" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-json-extension=".json.zip" aria-disabled="true"><strong>JSON ZIP · Easy</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-json-extension=".json" aria-disabled="true"><strong>JSON · Uncompressed</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
       </div>
       <p class="footnote">Every public JSON download requires a matching SHA-256 checksum sidecar.</p>
     </section>
     <section class="panel json-panel" aria-labelledby="atomic-title">
-      <h2 id="atomic-title">AtomicCards JSON downloads</h2>
-      <p class="hint">Card-name and Oracle-oriented data from official MTGJSON AtomicCards, profile B1. All translated names, card relationships, mana and rules are retained; only vendor redirect URLs and two verified redundant mana aliases are omitted. AtomicCards does <strong>not</strong> replace printing-level or token-level AllPrintings.</p>
+      <h2 id="atomic-title">AtomicCards Slim — Card Lookup</h2>
+      <p class="hint">Name-keyed Oracle and rules information from official MTGJSON AtomicCards (technical profile <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/contracts/atomic-b1.json">atomic-b1</a>). All translated names, card relationships, mana and rules are retained; only vendor redirect URLs and two verified redundant mana aliases are omitted. AtomicCards does <strong>not</strong> replace printing-level or token-level AllPrintings.</p>
       <p id="atomic-status" class="status" role="status" aria-live="polite">Checking independently verified AtomicCards releases…</p>
       <div class="json-links">
-        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.xz" aria-disabled="true"><strong>AtomicCards XZ · Smallest</strong><span>Not yet published</span></a><a class="json-checksum" data-atomic-sha=".json.xz" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.zst" aria-disabled="true"><strong>AtomicCards Zstandard · Fast</strong><span>Not yet published</span></a><a class="json-checksum" data-atomic-sha=".json.zst" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.zip" aria-disabled="true"><strong>AtomicCards ZIP · Easy</strong><span>Not yet published</span></a><a class="json-checksum" data-atomic-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
-        <div class="json-choice"><a class="json-link" data-atomic-extension=".json" aria-disabled="true"><strong>AtomicCards JSON · Uncompressed</strong><span>Not yet published</span></a><a class="json-checksum" data-atomic-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.xz" aria-disabled="true"><strong>AtomicCards XZ · Smallest</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json.xz" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.zst" aria-disabled="true"><strong>AtomicCards Zstandard · Fast</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json.zst" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-atomic-extension=".json.zip" aria-disabled="true"><strong>AtomicCards ZIP · Easy</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
+        <div class="json-choice"><a class="json-link" data-atomic-extension=".json" aria-disabled="true"><strong>AtomicCards JSON · Uncompressed</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
       </div>
       <p class="footnote">These files have an independent <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">AtomicCards Release series</a>. Every format requires its own SHA-256 sidecar.</p>
     </section>
+    <noscript><p class="footnote">JavaScript is disabled; availability has not been checked. Browse the <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=slim-">SQLite</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=json-slim-">AllPrintings JSON</a> or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=atomic-slim-">AtomicCards</a> release series, or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">all Releases</a>, for files and manifests.</p></noscript>
     <section class="about" aria-labelledby="why-slim">
       <h2 id="why-slim">Why MTGJSON-slim?</h2>
       <p>The official <a href="https://mtgjson.com/">MTGJSON</a> datasets are comprehensive. SQLite and AllPrintings-slim preserve verified card and token printings and gameplay data, while omitting reviewed nonessential data. AtomicCards-slim independently preserves card-name groups, translated names, nested relationships, rulings and legalities; only vendor links and two fully equivalent deprecated mana aliases are removed.</p>
+      <h3>What does verified mean?</h3>
+      <p>At build time, the pipelines verify the official upstream SHA-256, validate retained fields against the source and check package roundtrips. This page only checks that a download and matching checksum file are present; it does not download or hash files in your browser. Verify your downloaded file yourself. Checksums are not cryptographic signatures.</p>
+      <p>See the <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/docs/USAGE.md">usage guide</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/docs/DEVELOPMENT.md">validation and provenance guide</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/docs/PROFILE_2_3_DATA_INVENTORY.md">SQLite inventory</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/docs/JSON_DIRECT_SOURCE_PREVIEW.md">JSON selection</a> and <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">Release manifests</a>. JSON and AtomicCards manifests currently contain less commit/runtime/provenance metadata than SQLite manifests; do not assume identical provenance coverage.</p>
       <h3>Who is it for?</h3>
       <p>AI agents, deckbuilding tools, collection managers, card-search apps, deck validators and swap advisors that need smaller, dependable SQLite or JSON card data. All retained card values come from the verified official source; original non-English printing records remain included.</p>
-      <p><strong>What it is not:</strong> a standalone deckbuilder, AI model, game simulator or complete rules engine. Integrating tools must supply their own deckbuilding and rules logic. <a href="https://github.com/Dreadpool-87/MTGJSON-slim#why-does-a-slim-version-exist">Read more about the data selection and limitations</a>.</p>
+      <p><strong>What it is not:</strong> a standalone deckbuilder, AI model, game simulator or complete rules engine. Integrating tools must supply their own deckbuilding and rules logic. <a href="https://github.com/Dreadpool-87/MTGJSON-slim#choose-a-dataset">Read more about the data selection and limitations</a>.</p>
     </section>
-    <p class="footnote">New verified releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
+    <p class="footnote">Published releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
   </main>
   <footer><div class="shell footer-inner">
     <a class="credit" href="https://mtgjson.com/"><img src="https://mtgjson.com/images/assets/logo-mtgjson.svg" width="42" alt="MTGJSON logo"><span>Powered by MTGJSON</span></a>
@@ -228,13 +232,18 @@
         if (!response.ok) throw new Error('GitHub API unavailable');
         return response.json();
       }).then(releases => {
-        if (!Array.isArray(releases)) throw new Error('No Releases');
+        if (!Array.isArray(releases) || releases.some(item => !item ||
+          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
+          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
+          throw new Error('Invalid GitHub release metadata');
+        }
         // JSON uses an independent release series; do not displace the SQLite "latest".
         const release = releases
           .filter(item => item && !item.draft && !item.prerelease &&
             typeof item.tag_name === 'string' && item.tag_name.startsWith('json-slim-'))
           .sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''))[0];
-        if (!release || !Array.isArray(release.assets)) throw new Error('No published JSON release');
+        if (!release) { status.textContent = 'No published JSON release found in the checked listing.'; return; }
+        if (!Array.isArray(release.assets)) throw new Error('Invalid JSON assets');
         let enabled = 0;
         for (const link of links) {
           const suffix = link.dataset.jsonExtension;
@@ -253,10 +262,10 @@
           link.querySelector('span').textContent = (asset.size / 1000000).toFixed(1) + ' MB · Download';
           enabled++;
         }
-        status.textContent = enabled ? enabled + ' verified JSON formats available.' :
-          'JSON is not yet included in the latest public Release.';
+        status.textContent = enabled ? enabled + ' JSON formats with matching checksum files available.' :
+          'JSON assets or matching checksum files are unavailable in the selected Release.';
       }).catch(() => {
-        status.textContent = 'No verified public JSON Release is available yet. SQLite downloads remain available above.';
+        status.textContent = 'GitHub JSON release details temporarily unavailable; use the Releases page.';
       });
     })();
   </script>
@@ -274,11 +283,16 @@
         if (!response.ok) throw new Error('GitHub API returned ' + response.status);
         return response.json();
       }).then(releases => {
-        if (!Array.isArray(releases)) throw new Error('Invalid GitHub response');
+        if (!Array.isArray(releases) || releases.some(item => !item ||
+          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
+          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
+          throw new Error('Invalid GitHub release metadata');
+        }
         const release = releases.filter(item => item && !item.draft && !item.prerelease &&
           typeof item.tag_name === 'string' && item.tag_name.startsWith('atomic-slim-'))
           .sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''))[0];
-        if (!release || !Array.isArray(release.assets)) throw new Error('No verified AtomicCards Release');
+        if (!release) { status.textContent = 'No published AtomicCards release found in the checked listing.'; return; }
+        if (!Array.isArray(release.assets)) throw new Error('Invalid AtomicCards assets');
         let available = 0;
         for (const link of links) {
           const suffix = link.dataset.atomicExtension;
@@ -298,7 +312,7 @@
           link.querySelector('span').textContent = (asset.size / 1000000).toFixed(1) + ' MB · Download';
           available++;
         }
-        status.textContent = available ? available + ' verified AtomicCards formats available.' :
+        status.textContent = available ? available + ' AtomicCards formats with matching checksum files available.' :
           'AtomicCards assets are unavailable in the latest published Atomic Release.';
       }).catch(() => {
         status.textContent = 'AtomicCards download details unavailable; use the GitHub Releases page.';

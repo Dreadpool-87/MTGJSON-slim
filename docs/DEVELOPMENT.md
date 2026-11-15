@@ -28,7 +28,7 @@ The JSON source has a nested `meta` + set-keyed `data` shape, each set containin
 
 The JSON policy omits reviewed packaging/product/deck/translation/narrative fields. In particular, nested `foreignData` is deliberately omitted in AllPrintings JSON; the card-printing records themselves are not discarded. The builder streams the official JSON and validates projected records. [Exact JSON exclusions, source comparison, historical acceptance and measured sizes](JSON_DIRECT_SOURCE_PREVIEW.md) are documented separately. The cross-format audit checks overlapping identities and fields, **not** complete equivalence between SQLite and JSON schemas.
 
-### AtomicCards profile B1
+### AtomicCards Slim — Card Lookup (`atomic-b1`)
 
 AtomicCards contains card-name groups rather than a full printing/token inventory. Only these card properties are omitted:
 
@@ -104,7 +104,7 @@ A failed draft may require explicit maintenance, not bypassing validation. A pub
 
 ## Reproducibility and runtime differences
 
-SQLite output builds tables, rows and indexes in defined order and uses a fixed page size and `VACUUM`. XZ uses Python `lzma` preset 6. Manifests record official source URL/version/digests, profiles, tool commit, Python and SQLite runtime versions, output sizes and SHA-256; build reports additionally track elapsed time and peak memory.
+SQLite output builds tables, rows and indexes in defined order and uses a fixed page size and `VACUUM`. XZ uses Python `lzma` preset 6. SQLite manifests record official source URL/version/digests, profiles, tool commit, Python and SQLite runtime versions, output sizes and SHA-256. JSON and AtomicCards manifests record source/profile and output integrity information but do not currently provide the same commit/runtime/provenance fields; build reports additionally track elapsed time and peak memory.
 
 **Logical equality is not the same as byte equality across SQLite versions.** For the pinned source, the Python 3.14 upgrade used SQLite 3.53.1 and produced a different raw SQLite SHA-256 than the earlier runtime; the full selected-data, schema and index fingerprint remained identical. Repeatable bytes are checked **within the same runtime**, not promised across SQLite/liblzma versions. A source-backed logical projection check is required when runtime bytes differ.
 

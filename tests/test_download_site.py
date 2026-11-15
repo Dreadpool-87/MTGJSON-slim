@@ -34,6 +34,23 @@ class DownloadSiteTests(unittest.TestCase):
         cls.parser = Inputs()
         cls.parser.feed(cls.html)
 
+    def test_error_states_in_all_json_panels(self):
+        result = subprocess.run(['node', '--test', str(ROOT / 'tests/test_download_site_errors.js')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_honest_static_fallback_and_verification_scope(self):
+        self.assertNotIn('Not yet published', self.html)
+        self.assertNotIn('#why-does-a-slim-version-exist', self.html)
+        self.assertIn('#choose-a-dataset', self.html)
+        self.assertIn('## Choose a dataset', (ROOT / 'README.md').read_text())
+        self.assertIn('<noscript>', self.html)
+        self.assertIn('JavaScript is disabled; availability has not been checked', self.html)
+        self.assertIn('does not download or hash files in your browser', self.html)
+        self.assertIn('less commit/runtime/provenance metadata', self.html)
+        self.assertIn('AtomicCards Slim — Card Lookup', self.html)
+        self.assertIn('contracts/atomic-b1.json', self.html)
+        self.assertIn('At build time', self.html)
+
     def test_four_clear_database_choices(self):
         self.assertEqual(set(self.parser.format_values), {'sqlite', 'xz', 'zst', 'zip'})
         self.assertEqual(len(self.parser.format_values), 4)
@@ -76,7 +93,7 @@ class DownloadSiteTests(unittest.TestCase):
         self.assertIn("'/releases?per_page=50'", self.html)
         self.assertIn("item.tag_name.startsWith('json-slim-')", self.html)
         self.assertIn('independent release series', self.html)
-        self.assertIn("JSON is not yet included in the latest public Release.", self.html)
+        self.assertIn("JSON assets or matching checksum files are unavailable in the selected Release.", self.html)
 
 
 if __name__ == '__main__':

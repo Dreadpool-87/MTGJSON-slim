@@ -107,7 +107,7 @@ python scripts/package_json_formats.py \
 
 The packager checks raw JSON and XZ against the manifest and verifies Zstd/ZIP decompression to **exactly the same JSON SHA-256**. Full field-selection evidence and historical measurements are in the [AllPrintings JSON audit](JSON_DIRECT_SOURCE_PREVIEW.md).
 
-## 5. Build AtomicCards JSON (profile B1)
+## 5. Build AtomicCards Slim — Card Lookup
 
 AtomicCards is a *name-grouped* dataset. It retains the official card groups and nested source values but removes only `purchaseUrls` and the verified redundant `convertedManaCost` / `faceConvertedManaCost` aliases; consumers should use `manaValue` and `faceManaValue`.
 
