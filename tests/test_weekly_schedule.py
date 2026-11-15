@@ -76,7 +76,7 @@ class WeeklyReleaseWorkflowTests(unittest.TestCase):
         for link in ('docs/USAGE.md', 'docs/DEVELOPMENT.md',
                      'docs/PROFILE_2_3_DATA_INVENTORY.md', 'THIRD_PARTY_NOTICES.md'):
             self.assertIn(link, readme)
-        for family in ('AllPrintings SQLite', 'AllPrintings JSON', 'AtomicCards JSON'):
+        for family in ('AllPrintings SQLite', 'AllPrintings JSON', 'AtomicCards Slim — Card Lookup'):
             self.assertIn(family, readme)
         self.assertIn('https://github.com/Dreadpool-87/MTGJSON-slim/releases', readme)
         self.assertIn('Tuesday **07:00 Europe/Brussels**', development)

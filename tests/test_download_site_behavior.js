@@ -20,14 +20,14 @@ function release() {
   }
   return {name: 'Verified fixture', tag_name: 'slim-test', draft: false, assets};
 }
-async function render(fixture) {
+async function render(fixture, code = 200) {
   const ids = Object.fromEntries(['status', 'status-dot', 'download', 'checksum', 'file-note',
     ...['sqlite', 'xz', 'zst', 'zip'].map(x => 'size-' + x)].map(id => [id, element()]));
-  const inputs = ['xz', 'zst', 'zip', 'sqlite'].map((value, i) => element({value, checked: i === 0}));
+  const inputs = ['xz', 'zst', 'zip', 'sqlite'].map((value, i) => element({value, checked: i === 0, disabled: true}));
   const document = {getElementById: id => ids[id], querySelectorAll: selector => {
     assert.equal(selector, 'input[name="format"]'); return inputs;
   }};
-  vm.runInNewContext(script, {document, fetch: async () => ({ok: true, json: async () => fixture})});
+  vm.runInNewContext(script, {document, fetch: async () => ({ok: code === 200, status: code, json: async () => fixture})});
   await new Promise(resolve => setImmediate(resolve));
   return {ids, inputs};
 }
@@ -56,4 +56,16 @@ test('a checksum outside the approved release prefix cannot enable a format', as
   for (const a of r.assets) if (a.name.endsWith('.sha256')) a.browser_download_url = 'https://example.com/untrusted';
   const {inputs} = await render(r);
   assert.equal(inputs.filter(x => !x.disabled).length, 0);
+});
+
+for (const code of [403, 429, 500]) test(`SQLite: HTTP ${code} leaves a safe fallback`, async () => {
+  const {ids, inputs} = await render(null, code);
+  assert.match(ids.status.textContent, /unable to load/i);
+  assert.equal(ids.download.href, 'https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest');
+  assert.equal(ids.checksum.hidden, true);
+  assert.equal(inputs.filter(x => !x.disabled).length, 0);
+});
+test('SQLite: damaged metadata is unavailable, not unpublished', async () => {
+  const {ids} = await render({assets: [null]});
+  assert.match(ids.status.textContent, /unable to load/i);
 });
