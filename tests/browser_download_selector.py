@@ -104,7 +104,13 @@ def check_site(browser, base, out, mobile=False):
         prefix = "" if family=="sqlite" else family+"-"
         for fmt in FORMATS:
             value = "sqlite" if fmt=="raw" and family=="sqlite" else fmt
-            page.locator(f'input[name="{name}"][value="{value}"]').check(force=True)
+            input_control = page.locator(f'input[name="{name}"][value="{value}"]')
+            choice = page.locator(f'label.format:has(input[name="{name}"][value="{value}"])')
+            if mobile:
+                choice.tap()
+            else:
+                choice.click()
+            assert input_control.is_checked(), (family, value, "format selection failed")
             href=page.locator("#"+prefix+"download").get_attribute("href")
             sha=page.locator("#"+prefix+"checksum").get_attribute("href")
             ext=(".sqlite" if family=="sqlite" else ".json") + ("" if fmt=="raw" else "."+fmt)
