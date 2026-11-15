@@ -29,9 +29,9 @@ Use the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) to select 
 
 ## What is preserved?
 
-All datasets are generated from separately checksum-verified official sources. They retain the reviewed card identities and gameplay fields needed for their intended purposes, including rules, format legalities and relationships. Validation failures block publishing. SQLite and AtomicCards reject unexpected schema changes; the AllPrintings JSON policy keeps unexcluded source fields rather than silently dropping them.
+All datasets are generated from separately checksum-verified official sources. Their reviewed selections retain **card names, mana costs and values, rules text, card faces, identifiers, format legalities and rulings**. Validation failures block publishing. SQLite and AtomicCards reject unexpected schema changes; the AllPrintings JSON policy keeps unexcluded source fields rather than silently dropping them.
 
-The datasets are **intentionally not identical**: SQLite profile 2.3 and AllPrintings JSON omit reviewed nonessential fields (including some translation or product data), while AtomicCards B1 preserves nested translations but removes seller links and two verified redundant mana aliases. For the **exact** kept/removed fields, consult the linked inventories and [data policy](docs/DEVELOPMENT.md). These files are data sources, **not** a complete MTG rules engine, deckbuilder, ownership database or AI model.
+The datasets are **intentionally not identical**: SQLite profile 2.3 and AllPrintings JSON omit reviewed nonessential fields (including some translation or product data). **Omitting translation tables or nested translations does not remove non-English card-printing records or their printed names.** AtomicCards B1 retains nested translations but removes seller links and two verified redundant mana aliases. For the **exact** kept/removed fields, consult the linked inventories and [data policy](docs/DEVELOPMENT.md). These files are data sources, **not** a complete MTG rules engine, deckbuilder, ownership database or AI model.
 
 ## Use or build locally
 
@@ -47,6 +47,7 @@ Our GitHub Actions builds use **Python 3.14**, including its native Zstandard mo
 | [Development & automation](docs/DEVELOPMENT.md) | CI, schedules, release safety, reproducibility and troubleshooting |
 | [SQLite profile 2.3 inventory](docs/PROFILE_2_3_DATA_INVENTORY.md) | Exact retained/omitted tables, columns and indexes |
 | [AllPrintings JSON source audit](docs/JSON_DIRECT_SOURCE_PREVIEW.md) | JSON selection, same-date comparisons and historical acceptance evidence |
+| [AtomicCards B1 profile](contracts/atomic-b1.json) | Exact AtomicCards source schema, retained fields and three approved omissions |
 | [Historical SQLite profile 2.2 acceptance](docs/acceptance-profile-2.2.md) | Prior profile and test evidence |
 | [Third-party notices](THIRD_PARTY_NOTICES.md) | Source attribution, licenses and branding |
 
