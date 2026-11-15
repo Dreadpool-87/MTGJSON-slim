@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from functools import partial
@@ -21,6 +22,11 @@ from playwright.sync_api import sync_playwright
 
 PREFIX = 'https://github.com/Dreadpool-87/MTGJSON-slim/releases/download/'
 API_PREFIX = 'https://api.github.com/repos/Dreadpool-87/MTGJSON-slim/releases'
+SAFE_RESPONSE_HEADERS = (
+    'x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset',
+    'x-ratelimit-resource', 'x-ratelimit-used', 'retry-after',
+    'x-github-request-id',
+)
 EXPECTED = {
     27: '3833539171eb19c7dca2a7b6f083ee1323a51e7e',
     29: 'e76605c8c4e1d39d47e47a3cfb872d76aedc5a8e',
@@ -36,14 +42,33 @@ def verify_download(url: str, sidecar: str) -> None:
         assert not parsed.query and not parsed.fragment and not parsed.username
 
 
-def inspect(page, pr: int, mobile: bool, out: Path) -> dict:
+def response_diagnostics(response) -> dict:
+    """Record bounded, sanitized evidence; never store request headers or credentials."""
+    hdr = response.headers
+    record = {
+        'timestamp_utc': datetime.now(timezone.utc).isoformat(),
+        'url': response.url, 'status': response.status,
+        'headers': {key: hdr[key] for key in SAFE_RESPONSE_HEADERS if key in hdr},
+    }
+    if response.status != 200:
+        try:
+            body = response.text()[:512]
+            body = re.sub(r'(?i)Bearer\\s+[^\\s",}]+', 'Bearer [REDACTED]', body)
+            body = re.sub(r'gh[pousr]_[A-Za-z0-9_]+', '[REDACTED]', body)
+            record['body_excerpt'] = body
+        except Exception as exc:
+            record['body_excerpt_error'] = type(exc).__name__
+    return record
+
+
+def inspect(page, pr: int, mobile: bool, out: Path, evidence: dict) -> dict:
     """Open an unmodified page with the *real* browser network."""
     errors: list[str] = []
-    requests: list[str] = []
-    responses: list[dict] = []
+    requests: list[str] = evidence['apiRequests']
+    responses: list[dict] = evidence['apiResponses']
     page.on('pageerror', lambda err: errors.append(str(err)))
     page.on('request', lambda req: requests.append(req.url) if req.url.startswith(API_PREFIX) else None)
-    page.on('response', lambda res: responses.append({'url': res.url, 'status': res.status}) if res.url.startswith(API_PREFIX) else None)
+    page.on('response', lambda res: responses.append(response_diagnostics(res)) if res.url.startswith(API_PREFIX) else None)
     page.goto('http://127.0.0.1:' + os.environ['MTG_TEST_PORT'] + '/', wait_until='domcontentloaded', timeout=25000)
     page.wait_for_function('''() => ['status','json-status','atomic-status'].every(id => {
         const node = document.getElementById(id);
@@ -138,21 +163,37 @@ def main() -> None:
     t = Thread(target=server.serve_forever, daemon=True);t.start()
     result = {'pr':args.pr,'head':args.expected_head,'date_utc':datetime.now(timezone.utc).isoformat(),
               'real_browser':True,'live_github_api':True,'api_mocked':False,
-              'physical_android':False,'cases':[]}
+              'physical_android':False,
+              'github_run_id':os.environ.get('GITHUB_RUN_ID'),
+              'github_run_attempt':os.environ.get('GITHUB_RUN_ATTEMPT'),
+              'github_job':os.environ.get('GITHUB_JOB'),
+              'runner_name':os.environ.get('RUNNER_NAME'),
+              'cases':[]}
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             try:
                 for label, mobile, vp in [('desktop',False,{'width':1366,'height':768}),('mobile',True,{'width':390,'height':844})]:
                     ctx = browser.new_context(viewport=vp, device_scale_factor=2 if mobile else 1, is_mobile=mobile, has_touch=mobile)
+                    evidence = {'apiRequests': [], 'apiResponses': []}
                     try:
-                        item=inspect(ctx.new_page(), args.pr, mobile, args.out_dir / f'pr{args.pr}_{label}.png')
+                        item=inspect(ctx.new_page(), args.pr, mobile, args.out_dir / f'pr{args.pr}_{label}.png', evidence)
                         result['cases'].append(item)
                         print(f'PASS PR #{args.pr} {label}: {len(item["apiRequests"])} real GitHub API requests')
+                    except Exception:
+                        result['cases'].append({'platform':label, 'status':'FAIL',
+                                                'diagnostics':evidence,
+                                                'error':traceback.format_exc()})
+                        print(f'FAIL PR #{args.pr} {label}: see JSON diagnostics')
                     finally:
                         ctx.close()
-                result['cases'].append(check_nojs(browser,'http://127.0.0.1:'+os.environ['MTG_TEST_PORT']+'/',args.out_dir / f'pr{args.pr}_nojs.png'))
-                print(f'PASS PR #{args.pr} no-JS fallback')
+                try:
+                    result['cases'].append(check_nojs(browser,'http://127.0.0.1:'+os.environ['MTG_TEST_PORT']+'/',args.out_dir / f'pr{args.pr}_nojs.png'))
+                    print(f'PASS PR #{args.pr} no-JS fallback')
+                except Exception:
+                    result['cases'].append({'platform':'mobile-no-js', 'status':'FAIL',
+                                            'error':traceback.format_exc()})
+                    print(f'FAIL PR #{args.pr} no-JS: see JSON diagnostics')
             finally:
                 browser.close()
     except Exception:
