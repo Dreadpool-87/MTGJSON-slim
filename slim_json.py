@@ -103,6 +103,28 @@ def project_set(code, source):
     return result
 
 
+def check_root(archive):
+    """Fail closed on unfamiliar or duplicate top-level source fields (streaming)."""
+    seen = set()
+    pending = None
+    with lzma.open(archive, "rb") as stream:
+        events = iter(streaming_parser().parse(stream, use_float=True))
+        if next(events, None) != ("", "start_map", None):
+            raise ValueError("JSON root must be an object")
+        for prefix, event, value in events:
+            if prefix == "" and event == "map_key":
+                if value not in {"meta", "data"} or value in seen:
+                    raise ValueError("Unknown or duplicate JSON root field: " + value)
+                seen.add(value)
+                pending = value
+            elif pending is not None and prefix == pending:
+                if event != "start_map":
+                    raise ValueError("JSON root meta/data must be objects")
+                pending = None
+    if seen != {"meta", "data"}:
+        raise ValueError("JSON root must contain exactly meta and data")
+
+
 def read_meta(archive):
     ijson = streaming_parser()
     with lzma.open(archive, "rb") as stream:
@@ -197,6 +219,7 @@ def build(archive, checksum_path, output_dir):
         raise FileExistsError("Refusing to overwrite output directory")
     official_hash = expected_digest(checksum_path)
     verify_source(archive, official_hash)
+    check_root(archive)
     meta = read_meta(archive)
     filename = f'AllPrintings-slim-{meta["version"]}-{PROFILE}.json'
     output_dir.parent.mkdir(parents=True, exist_ok=True)
