@@ -166,13 +166,14 @@ class AtomicSlimTests(unittest.TestCase):
     def test_atomic_download_page_requires_checksums(self):
         site = (ROOT / "docs/index.html").read_text(encoding="utf-8")
         self.assertIn('id="atomic-title"', site)
-        self.assertIn("item.tag_name.startsWith('atomic-slim-')", site)
-        self.assertIn("item.name.startsWith('AtomicCards-slim-')", site)
+        script = (ROOT / 'docs/release-downloads.js').read_text(encoding='utf-8')
+        self.assertIn("prefix: 'atomic-slim-'", script)
+        self.assertIn('^AtomicCards-slim-', script)
         for ext in (".json", ".json.xz", ".json.zst", ".json.zip"):
             self.assertIn('data-atomic-extension="' + ext + '"', site)
             self.assertIn('data-atomic-sha="' + ext + '"', site)
-        self.assertIn("checksumLink.href = sidecar.browser_download_url", site)
-        self.assertIn("link.removeAttribute('aria-disabled')", site)
+        self.assertIn("sha.href = pair.sha.browser_download_url", script)
+        self.assertIn("link.removeAttribute('aria-disabled')", script)
 
     @unittest.skipUnless(HAS_IJSON, 'ijson required for full Atomic regression')
     def test_builder_rejects_unreviewed_root_information(self):

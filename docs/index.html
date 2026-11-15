@@ -84,7 +84,7 @@
     <div class="status" role="status" aria-live="polite"><span class="status-dot" id="status-dot"></span><span id="status">Checking SQLite release availability…</span></div>
     <section class="panel" aria-labelledby="download-title">
       <h2 id="download-title">SQLite downloads</h2>
-      <p class="hint">All compressed formats unpack to the exact same SQLite database. File sizes are taken from the latest GitHub Release.</p>
+      <p class="hint">All compressed formats unpack to the exact same SQLite database. File sizes are taken from the selected SQLite Release.</p>
       <fieldset><legend>Select your format</legend>
         <div class="formats" id="formats">
           <label class="format"><input type="radio" name="format" value="xz" checked disabled><span class="format-content"><span class="format-header"><span class="format-name">XZ · Smallest</span><span class="format-size" id="size-xz">—</span></span><span class="format-details">Compact download with excellent compression.</span></span></label>
@@ -94,6 +94,7 @@
         </div>
       </fieldset>
       <div class="action-row"><a id="download" class="download" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Open latest Release</a><a id="checksum" hidden class="secondary" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">Checksum (.sha256)</a></div>
+      <p class="footnote"><a id="sqlite-release" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">Browse Releases</a> · <a id="sqlite-manifest" hidden>Selected Release manifest</a></p>
       <p class="file-note" id="file-note" aria-live="polite">Release files are hosted on GitHub, not this site.</p>
     </section>
     <section class="panel json-panel" aria-labelledby="json-title">
@@ -106,6 +107,7 @@
         <div class="json-choice"><a class="json-link" data-json-extension=".json.zip" aria-disabled="true"><strong>JSON ZIP · Easy</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
         <div class="json-choice"><a class="json-link" data-json-extension=".json" aria-disabled="true"><strong>JSON · Uncompressed</strong><span>Availability not checked</span></a><a class="json-checksum" data-json-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
       </div>
+      <p class="footnote"><a id="json-release" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">Browse Releases</a> · <a id="json-manifest" hidden>Selected Release manifest</a></p>
       <p class="footnote">Every public JSON download requires a matching SHA-256 checksum sidecar.</p>
     </section>
     <section class="panel json-panel" aria-labelledby="atomic-title">
@@ -118,6 +120,7 @@
         <div class="json-choice"><a class="json-link" data-atomic-extension=".json.zip" aria-disabled="true"><strong>AtomicCards ZIP · Easy</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json.zip" aria-disabled="true">SHA-256 checksum</a></div>
         <div class="json-choice"><a class="json-link" data-atomic-extension=".json" aria-disabled="true"><strong>AtomicCards JSON · Uncompressed</strong><span>Availability not checked</span></a><a class="json-checksum" data-atomic-sha=".json" aria-disabled="true">SHA-256 checksum</a></div>
       </div>
+      <p class="footnote"><a id="atomic-release" href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">Browse Releases</a> · <a id="atomic-manifest" hidden>Selected Release manifest</a></p>
       <p class="footnote">These files have an independent <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">AtomicCards Release series</a>. Every format requires its own SHA-256 sidecar.</p>
     </section>
     <noscript><p class="footnote">JavaScript is disabled; availability has not been checked. Browse the <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=slim-">SQLite</a>, <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=json-slim-">AllPrintings JSON</a> or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases?q=atomic-slim-">AtomicCards</a> release series, or <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases">all Releases</a>, for files and manifests.</p></noscript>
@@ -131,193 +134,12 @@
       <p>AI agents, deckbuilding tools, collection managers, card-search apps, deck validators and swap advisors that need smaller, dependable SQLite or JSON card data. All retained card values come from the verified official source; original non-English printing records remain included.</p>
       <p><strong>What it is not:</strong> a standalone deckbuilder, AI model, game simulator or complete rules engine. Integrating tools must supply their own deckbuilding and rules logic. <a href="https://github.com/Dreadpool-87/MTGJSON-slim#choose-a-dataset">Read more about the data selection and limitations</a>.</p>
     </section>
-    <p class="footnote">Published releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
+    <p class="footnote">Availability is selected within the checked GitHub listing. An incomplete newest publication may use a clearly labelled older complete release; files from different builds are never combined. The lookup stops after five pages or ten seconds. Published releases appear here automatically. If GitHub's API is temporarily unavailable, use <a href="https://github.com/Dreadpool-87/MTGJSON-slim/releases/latest">the latest Release page</a>.</p>
   </main>
   <footer><div class="shell footer-inner">
     <a class="credit" href="https://mtgjson.com/"><img src="https://mtgjson.com/images/assets/logo-mtgjson.svg" width="42" alt="MTGJSON logo"><span>Powered by MTGJSON</span></a>
     <span class="disclaimer">Independent, unofficial community project. Not affiliated with or endorsed by MTGJSON or Wizards of the Coast. <a href="https://github.com/Dreadpool-87/MTGJSON-slim/blob/main/THIRD_PARTY_NOTICES.md">Notices</a>.</span>
   </div></footer>
-  <script>
-    (() => {
-      'use strict';
-      const repo = 'Dreadpool-87/MTGJSON-slim';
-      const releases = 'https://github.com/' + repo + '/releases/latest';
-      const prefix = 'https://github.com/' + repo + '/releases/download/';
-      const suffixes = {sqlite: '.sqlite', xz: '.sqlite.xz', zst: '.sqlite.zst', zip: '.sqlite.zip'};
-      const status = document.getElementById('status');
-      const dot = document.getElementById('status-dot');
-      const button = document.getElementById('download');
-      const checksum = document.getElementById('checksum');
-      const note = document.getElementById('file-note');
-      const inputs = [...document.querySelectorAll('input[name="format"]')];
-      let assets = {};
-      const safeUrl = asset => {
-        const url = asset && asset.browser_download_url;
-        return typeof url === 'string' && url.startsWith(prefix) ? url : null;
-      };
-      const formatBytes = bytes => (bytes / 1000000).toFixed(1) + ' MB';
-      const currentInput = () => inputs.find(input => input.checked && !input.disabled);
-      const refresh = () => {
-        const selected = currentInput();
-        const asset = selected && assets[selected.value];
-        if (!asset) {
-          button.href = releases;
-          button.textContent = 'View all release files';
-          checksum.href = releases;
-          checksum.hidden = true;
-          note.textContent = 'Select an available format to download.';
-          return;
-        }
-        button.href = safeUrl(asset) || releases;
-        button.textContent = 'Download ' + selected.value.toUpperCase();
-        note.textContent = asset.name + ' · ' + formatBytes(asset.size);
-        const sidecar = assets[selected.value + '-sha'];
-        checksum.hidden = !sidecar;
-        checksum.href = sidecar ? safeUrl(sidecar) || releases : releases;
-      };
-      inputs.forEach(input => input.addEventListener('change', refresh));
-      const load = async () => {
-        try {
-          const response = await fetch('https://api.github.com/repos/' + repo + '/releases/latest', {
-            headers: {'Accept': 'application/vnd.github+json'}, cache: 'no-store'
-          });
-          if (!response.ok) throw new Error('GitHub API returned ' + response.status);
-          const release = await response.json();
-          if (!release || !Array.isArray(release.assets) || release.draft) throw new Error('No published assets');
-          for (const [key, suffix] of Object.entries(suffixes)) {
-            const asset = release.assets.find(item => item.name.endsWith(suffix) && safeUrl(item));
-            const sidecar = asset && release.assets.find(item =>
-              item.name === asset.name + '.sha256' && safeUrl(item));
-            if (asset && sidecar) {
-              assets[key] = asset;
-              assets[key + '-sha'] = sidecar;
-            }
-            const input = inputs.find(item => item.value === key);
-            input.disabled = !(asset && sidecar);
-            const size = document.getElementById('size-' + key);
-            size.textContent = asset && sidecar ? formatBytes(asset.size) : 'Not available';
-          }
-          if (!currentInput()) {
-            const first = inputs.find(input => !input.disabled);
-            if (first) first.checked = true;
-          }
-          const count = inputs.filter(input => !input.disabled).length;
-          if (!count) throw new Error('No supported SQLite download in this release');
-          dot.classList.add('ready');
-          status.textContent = release.name + ' · ' + count + ' formats available';
-          refresh();
-        } catch (error) {
-          dot.classList.add('error');
-          status.textContent = 'Unable to load GitHub release details right now.';
-          button.href = releases;
-          button.textContent = 'Open latest Release';
-          checksum.hidden = true;
-          note.textContent = 'You can still download directly from GitHub.';
-        }
-      };
-      load();
-    })();
-  </script>
-  <script>
-    (() => {
-      'use strict';
-      const repo = 'Dreadpool-87/MTGJSON-slim';
-      const prefix = 'https://github.com/' + repo + '/releases/download/';
-      const links = [...document.querySelectorAll('[data-json-extension]')];
-      const checksumLinks = [...document.querySelectorAll('[data-json-sha]')];
-      const status = document.getElementById('json-status');
-      fetch('https://api.github.com/repos/' + repo + '/releases?per_page=50', {
-        headers: {'Accept': 'application/vnd.github+json'}, cache: 'no-store'
-      }).then(response => {
-        if (!response.ok) throw new Error('GitHub API unavailable');
-        return response.json();
-      }).then(releases => {
-        if (!Array.isArray(releases) || releases.some(item => !item ||
-          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
-          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
-          throw new Error('Invalid GitHub release metadata');
-        }
-        // JSON uses an independent release series; do not displace the SQLite "latest".
-        const release = releases
-          .filter(item => item && !item.draft && !item.prerelease &&
-            typeof item.tag_name === 'string' && item.tag_name.startsWith('json-slim-'))
-          .sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''))[0];
-        if (!release) { status.textContent = 'No published JSON release found in the checked listing.'; return; }
-        if (!Array.isArray(release.assets)) throw new Error('Invalid JSON assets');
-        let enabled = 0;
-        for (const link of links) {
-          const suffix = link.dataset.jsonExtension;
-          const asset = release.assets.find(item =>
-            item.name.startsWith('AllPrintings-slim-') && item.name.endsWith(suffix) &&
-            typeof item.browser_download_url === 'string' && item.browser_download_url.startsWith(prefix));
-          const sha = asset && release.assets.find(item =>
-            item.name === asset.name + '.sha256' &&
-            typeof item.browser_download_url === 'string' && item.browser_download_url.startsWith(prefix));
-          if (!asset || !sha) continue;
-          link.href = asset.browser_download_url;
-          link.removeAttribute('aria-disabled');
-          const checksumLink = checksumLinks.find(item => item.dataset.jsonSha === suffix);
-          checksumLink.href = sha.browser_download_url;
-          checksumLink.removeAttribute('aria-disabled');
-          link.querySelector('span').textContent = (asset.size / 1000000).toFixed(1) + ' MB · Download';
-          enabled++;
-        }
-        status.textContent = enabled ? enabled + ' JSON formats with matching checksum files available.' :
-          'JSON assets or matching checksum files are unavailable in the selected Release.';
-      }).catch(() => {
-        status.textContent = 'GitHub JSON release details temporarily unavailable; use the Releases page.';
-      });
-    })();
-  </script>
-  <script>
-    (() => {
-      'use strict';
-      const repo = 'Dreadpool-87/MTGJSON-slim';
-      const prefix = 'https://github.com/' + repo + '/releases/download/';
-      const links = [...document.querySelectorAll('[data-atomic-extension]')];
-      const checksums = [...document.querySelectorAll('[data-atomic-sha]')];
-      const status = document.getElementById('atomic-status');
-      fetch('https://api.github.com/repos/' + repo + '/releases?per_page=100', {
-        headers: {'Accept': 'application/vnd.github+json'}, cache: 'no-store'
-      }).then(response => {
-        if (!response.ok) throw new Error('GitHub API returned ' + response.status);
-        return response.json();
-      }).then(releases => {
-        if (!Array.isArray(releases) || releases.some(item => !item ||
-          typeof item.tag_name !== 'string' || typeof item.draft !== 'boolean' ||
-          typeof item.prerelease !== 'boolean' || !Array.isArray(item.assets))) {
-          throw new Error('Invalid GitHub release metadata');
-        }
-        const release = releases.filter(item => item && !item.draft && !item.prerelease &&
-          typeof item.tag_name === 'string' && item.tag_name.startsWith('atomic-slim-'))
-          .sort((a, b) => (b.published_at || '').localeCompare(a.published_at || ''))[0];
-        if (!release) { status.textContent = 'No published AtomicCards release found in the checked listing.'; return; }
-        if (!Array.isArray(release.assets)) throw new Error('Invalid AtomicCards assets');
-        let available = 0;
-        for (const link of links) {
-          const suffix = link.dataset.atomicExtension;
-          const asset = release.assets.find(item => item.name.startsWith('AtomicCards-slim-') &&
-            item.name.endsWith(suffix) && typeof item.browser_download_url === 'string' &&
-            item.browser_download_url.startsWith(prefix));
-          const sidecar = asset && release.assets.find(item =>
-            item.name === asset.name + '.sha256' && typeof item.browser_download_url === 'string' &&
-            item.browser_download_url.startsWith(prefix));
-          if (!asset || !sidecar) continue;
-          const checksumLink = checksums.find(item => item.dataset.atomicSha === suffix);
-          if (!checksumLink) continue;
-          link.href = asset.browser_download_url;
-          link.removeAttribute('aria-disabled');
-          checksumLink.href = sidecar.browser_download_url;
-          checksumLink.removeAttribute('aria-disabled');
-          link.querySelector('span').textContent = (asset.size / 1000000).toFixed(1) + ' MB · Download';
-          available++;
-        }
-        status.textContent = available ? available + ' AtomicCards formats with matching checksum files available.' :
-          'AtomicCards assets are unavailable in the latest published Atomic Release.';
-      }).catch(() => {
-        status.textContent = 'AtomicCards download details unavailable; use the GitHub Releases page.';
-      });
-    })();
-  </script>
+  <script src="release-downloads.js" defer></script>
 </body>
 </html>

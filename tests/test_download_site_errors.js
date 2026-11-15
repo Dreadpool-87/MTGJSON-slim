@@ -1,30 +1,15 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
-const html = fs.readFileSync(require('node:path').join(__dirname, '../docs/index.html'), 'utf8');
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-async function status(family, response) {
-  const target = {textContent: ''};
-  const document = {getElementById: () => target, querySelectorAll: selector => selector.includes('extension') ? [{dataset: {jsonExtension: '.json', atomicExtension: '.json'}}] : []};
-  vm.runInNewContext(scripts[family === 'json' ? 1 : 2], {document, fetch: async () => response});
-  await new Promise(setImmediate);
-  return target.textContent;
-}
-for (const family of ['json', 'atomic']) {
-  for (const code of [403, 429, 500]) test(`${family}: HTTP ${code} is unknown, not unpublished`, async () => {
-    const message = await status(family, {ok: false, status: code});
-    assert.match(message, /unavailable/i);
-    assert.doesNotMatch(message, /not.*published|no verified|remain available/i);
+const {render,fixture} = require('./release_site_harness');
+async function message(family,page){const ui=await render([page]);return ui.ids[family+'-status'].textContent;}
+for(const family of ['json','atomic']) {
+  for(const code of [403,429,500]) test(`${family}: HTTP ${code} is unknown, not unpublished`,async()=>{
+    const text=await message(family,{code});assert.match(text,/unknown|unavailable/i);assert.doesNotMatch(text,/no published|remain available/i);
   });
-  test(`${family}: successful empty listing is distinct from request failure`, async () => {
-    assert.match(await status(family, {ok: true, json: async () => []}), /no published/i);
+  test(`${family}: empty listing differs from failed request`,async()=>{assert.match(await message(family,{data:[]}),/no eligible.*checked listing/i);});
+  for(const payload of [[null],[{}],[{tag_name:family+'-slim-test',draft:false,prerelease:false}], [{...fixture(family),assets:[null]}]]) test(`${family}: damaged array items are unavailable`,async()=>{
+    assert.match(await message(family,{data:payload}),/unknown|unavailable/i);
   });
-  for (const payload of [[null], [{}], [{tag_name: family === 'json' ? 'json-slim-test' : 'atomic-slim-test', draft: false, prerelease: false}], [{tag_name: family === 'json' ? 'json-slim-test' : 'atomic-slim-test', draft: false, prerelease: false, assets: [null]}]]) test(`${family}: damaged array items are unavailable`, async () => {
-    assert.match(await status(family, {ok: true, json: async () => payload}), /unavailable/i);
-  });
-  test(`${family}: malformed payload is unavailable`, async () => {
-    assert.match(await status(family, {ok: true, json: async () => ({message: 'broken'})}), /unavailable/i);
-  });
+  test(`${family}: malformed payload is unavailable`,async()=>{assert.match(await message(family,{data:{message:'broken'}}),/unknown|unavailable/i);});
 }
