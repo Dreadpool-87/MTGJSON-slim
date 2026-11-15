@@ -51,6 +51,8 @@ python scripts/run_regression_tests.py
 
 Node.js is also required for executable download-site tests. The Python regression runner fails on failing tests, **skipped tests** or no discovered tests. That gate runs in all three primary release test jobs and catches cross-format, source validation, website and archive regressions. The SQLite converter itself stays standard-library-only; installing JSON and Zstd test dependencies is a **CI test environment** requirement, not a SQLite runtime dependency.
 
+The AtomicCards downloader and its regression tests require `curl`; no additional Python package is needed for downloading. Verified source pairs are staged before no-overwrite publication, with cleanup for catchable failures. The two final file links are not a crash-atomic pair; see [download prerequisites and recovery](USAGE.md#2-prerequisites-for-local-builds). Builders are currently tested on Linux. Native Windows builder acceptance has not been performed; the SQLite builder still imports Unix-only `resource`. This does not prevent compatible Windows applications from consuming the published datasets.
+
 The current six workflow definitions are:
 
 | Workflow | Purpose |
