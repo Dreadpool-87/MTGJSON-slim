@@ -29,7 +29,7 @@ Use the [download page](https://dreadpool-87.github.io/MTGJSON-slim/) to select 
 
 ## What is preserved?
 
-All datasets are generated from separately checksum-verified official sources. They retain the reviewed card identities and gameplay fields needed for their intended purposes, including rules, format legalities and relationships. Unreviewed schema changes or failed validation block publishing instead of silently removing information.
+All datasets are generated from separately checksum-verified official sources. They retain the reviewed card identities and gameplay fields needed for their intended purposes, including rules, format legalities and relationships. Validation failures block publishing. SQLite and AtomicCards reject unexpected schema changes; the AllPrintings JSON policy keeps unexcluded source fields rather than silently dropping them.
 
 The datasets are **intentionally not identical**: SQLite profile 2.3 and AllPrintings JSON omit reviewed nonessential fields (including some translation or product data), while AtomicCards B1 preserves nested translations but removes seller links and two verified redundant mana aliases. For the **exact** kept/removed fields, consult the linked inventories and [data policy](docs/DEVELOPMENT.md). These files are data sources, **not** a complete MTG rules engine, deckbuilder, ownership database or AI model.
 
