@@ -1,0 +1,57 @@
+name: Artifact transfer compatibility (PR only)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/artifact-transfer-smoke.yml'
+      - '.github/workflows/verify.yml'
+      - '.github/workflows/json-weekly.yml'
+      - '.github/workflows/atomic-weekly.yml'
+      - '.github/workflows/json-cross-format-audit.yml'
+      - '.github/workflows/json-source-acceptance.yml'
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create a deterministic test-only candidate and SHA-256 sidecar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          printf 'MTGJSON-slim artifact transport fixture v1\n' > candidate/fixture.txt
+          (cd candidate && sha256sum fixture.txt > fixture.txt.sha256)
+      - name: Upload the test-only candidate with action v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: action-transport-fixture
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 1
+
+  consume:
+    needs: produce
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download the same candidate with action v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: action-transport-fixture
+          path: candidate
+      - name: Verify intact candidate and reject a modified candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find candidate -maxdepth 1 -type f | wc -l)" -eq 2
+          printf 'MTGJSON-slim artifact transport fixture v1\n' > expected.txt
+          cmp expected.txt candidate/fixture.txt
+          (cd candidate && sha256sum --check fixture.txt.sha256)
+          printf 'tampered\n' > candidate/fixture.txt
+          if (cd candidate && sha256sum --check fixture.txt.sha256 >/dev/null 2>&1); then
+            echo 'FAIL: modified candidate passed SHA-256 verification' >&2
+            exit 1
+          fi
+          echo 'PASS: intact cross-job transfer; corrupted candidate rejected'
