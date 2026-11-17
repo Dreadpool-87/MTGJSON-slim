@@ -1,0 +1,31 @@
+name: Temporary UTC and Brussels scheduler probe
+run-name: "Scheduler probe - ${{ github.event.schedule }}"
+# Temporary diagnostic only. Remove after reviewing both scheduled slots.
+# UTC slot: 2026-11-17T11:29:00+00:00; Brussels slot: 2026-11-17T12:39:00+01:00.
+on:
+  schedule:
+    - cron: '29 11 17 11 *'
+    - cron: '39 12 17 11 *'
+      timezone: 'Europe/Brussels'
+permissions: {}
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Record automatic scheduling evidence
+        env:
+          TRIGGER_EVENT: ${{ github.event_name }}
+          TRIGGER_SCHEDULE: ${{ github.event.schedule }}
+          WORKFLOW_COMMIT: ${{ github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          printf 'event=%s\nschedule=%s\ncommit=%s\nrun_id=%s\n' "$TRIGGER_EVENT" "$TRIGGER_SCHEDULE" "$WORKFLOW_COMMIT" "$WORKFLOW_RUN_ID"
+          case "$TRIGGER_SCHEDULE" in
+            '29 11 17 11 *') echo 'probe=UTC'; echo 'expected_utc=2026-11-17T11:29:00+00:00' ;;
+            '39 12 17 11 *') echo 'probe=Europe/Brussels'; echo 'expected_utc=2026-11-17T11:39:00+00:00' ;;
+            *) echo 'Unexpected schedule'; exit 1 ;;
+          esac
+          date -u '+runner_utc=%Y-%m-%dT%H:%M:%SZ'
+          TZ=Europe/Brussels date '+runner_brussels=%Y-%m-%dT%H:%M:%S%z'
